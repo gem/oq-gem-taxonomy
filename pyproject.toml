@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openquake.gem-taxonomy"
+dynamic = ["version"]
+
+dependencies = [
+   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git"
+]
+requires-python = ">=3"
+authors = [
+  {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
+]
+maintainers = [
+  {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
+]
+description = "Openquake Gem Taxonomy - Library to manage GEM Taxonomy strings"
+readme = "README.md"
+license = {file = "LICENSE.txt"}
+keywords = ["GEM", "taxonomy", "standard", "openquake"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+namespaces = true
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = {attr = "openquake.gem_taxonomy.version.__version__"}
+
+[tool.distutils.egg_info]
+egg_base = "egg_dir"
+
+[project.optional-dependencies]
+cli = [
+]
+
+[project.urls]
+# Homepage = "https://example.com"
+# Documentation = "https://readthedocs.org"
+Repository = "https://github.com/gem/oq-gem-taxonomy"
+"Bug Tracker" = "https://github.com/gem/oq-gem-taxonomy/issues"
+# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+[project.scripts]
+"gem-taxonomy-info" = "openquake.gem_taxonomy.scripts:info"
+
+# [project.gui-scripts]
+# spam-gui = "spam:main_gui"
+
+# [project.entry-points."spam.magical"]
+# tomatoes = "spam:main_tomatoes"
