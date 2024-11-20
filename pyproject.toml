@@ -36,7 +36,7 @@ where = ["."]
 version = {attr = "openquake.gem_taxonomy.version.__version__"}
 
 [tool.distutils.egg_info]
-egg_base = "egg_dir"
+egg_base = ".egg_dir"
 
 [project.optional-dependencies]
 cli = [
