@@ -16,7 +16,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 from openquake.gem_taxonomy import GemTaxonomy
+import sys
 
 
 def info():
     GemTaxonomy.info()
+
+
+def validate():
+    gt = GemTaxonomy()
+    gt.validate(sys.argv[1])

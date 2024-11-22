@@ -7,7 +7,8 @@ name = "openquake.gem-taxonomy"
 dynamic = ["version"]
 
 dependencies = [
-   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git"
+   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git",
+   "parsimonious == 0.10.0",
 ]
 requires-python = ">=3"
 authors = [
@@ -51,6 +52,7 @@ Repository = "https://github.com/gem/oq-gem-taxonomy"
 
 [project.scripts]
 "gem-taxonomy-info" = "openquake.gem_taxonomy.scripts:info"
+"gem-taxonomy-validate" = "openquake.gem_taxonomy.scripts:validate"
 
 # [project.gui-scripts]
 # spam-gui = "spam:main_gui"
