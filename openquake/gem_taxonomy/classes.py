@@ -31,8 +31,8 @@ import json
 #   - atoms order
 #
 # * Atom scope
-#   - arguments check if present
-#     . are optional? if not check '(' character
+#   DONE - arguments check if present
+#   DONE  . are optional? if not check '(' character
 #   - if not arguments check syntax
 #   - parameters check if present
 #   - if not parameters check syntax
@@ -47,6 +47,7 @@ def _find_node(node, name):
         if ret:
             return ret
     return None
+
 
 class GemTaxonomy:
     # method to test package infrastructure
@@ -177,27 +178,37 @@ GemTaxonomy Info
                     list(set(filtered_atoms).union(
                         set(args_info['filtered_atoms']))))
 
-    def validate_attribute(self, attr_base, attribute_str, attr_orig_in,
-                           attr_match, filtered_atoms):
-        atoms = self.extract_atoms(attribute_str)
+    def validate_attribute(self, attr_base, attr, attr_scope,
+                           attr_name, filtered_atoms):
+        """
+        attr_base:      full attribute (recursion invariant)
+        attr:           current evaluated attribute
+        attr_scope:     linearized description of current atom scope
+                        (e.g. if already argument...)
+        attr_name:      already specified when call as arguments check
+        filtered_atoms: list of prohibited atoms (from arguments check)
+        """
+        atoms = self.extract_atoms(attr)
         atom_names_in = []
         atoms_in = {}
-        attr_name = attr_match
-        attr_orig = attr_orig_in
+
         for atom in atoms:
             print("Atom:      %s" % atom)
             atom_name = atom.split('(')[0].split(':')[0]
 
             if atom_name in filtered_atoms:
                 raise ValueError(
-                    'Attribute [%s]: forbidden atom [%s] recusion found.' %
-                    (attr_base, atom_name))
+                    'Attribute [%s], scope [%s]: forbidden'
+                    ' atom recusion found [%s].' % (
+                        attr_base, attr_scope, atom_name))
+
+            args_attr_scope = (attr_scope + ', ' + 'args ' + atom_name)
 
             # check multiple atom occurrencies
             if atom_name in atom_names_in:
                 raise ValueError(
                     'Attribute [%s]: multiple occurrencies of [%s] atom.' %
-                    (attribute_str, atom_name))
+                    (attr, atom_name))
 
             tax_atom = next(el for el in self.tax['Atom']
                             if el['name'] == atom_name)
@@ -210,7 +221,7 @@ GemTaxonomy Info
                     'Attribute [%s]: atoms group "%s"'
                     ' already present with member [%s],'
                     ' new atom [%s] not allowed.' %
-                    (attribute_str, self.tax['AtomsGroupDict'][
+                    (attr, self.tax['AtomsGroupDict'][
                         tax_atom['group']]['desc'],
                      [x for x in atoms_group_name][0],
                      atom_name))
@@ -223,14 +234,15 @@ GemTaxonomy Info
                 #     print('Not independent atom [%s], at'
                 #           ' least unsorted attribute atoms.' % atom_name)
                 attr_name = tax_atom['attr']
-                attr_orig = tax_atom['name']
+                attr_scope = tax_atom['name']
+                args_attr_scope = 'args ' + atom_name
             else:
                 if attr_name != tax_atom['attr']:
                     raise ValueError(
                         'For attribute [%s] discordant [atom/argument]->'
                         '[attribute] associations:'
                         ' [%s]->[%s] vs [%s]->[%s]' %
-                        (attribute_str, attr_orig, attr_name,
+                        (attr, attr_scope, attr_name,
                          tax_atom['name'], tax_atom['attr']))
             if tax_atom['args']:
                 tax_args = json.loads(tax_atom['args'])
@@ -246,28 +258,24 @@ GemTaxonomy Info
                     if ('args_min' in tax_args and
                             len_atom_args < tax_args['args_min']):
                         raise ValueError(
-                            'Atom [%s] requires at least %d argument%s,'
-                            ' %d found [%s].' %
-                            (atom_name, tax_args['args_min'],
+                            'Attribute [%s]: atom %s requires at least'
+                            ' %d argument%s, %d found [%s].' %
+                            (attr_base, atom_name, tax_args['args_min'],
                              's' if tax_args['args_min'] > 1 else '',
                              len_atom_args, atom))
 
                     if ('args_max' in tax_args and
                             len_atom_args > tax_args['args_max']):
                         raise ValueError(
-                            'Atom [%s] requires a maximum of %d'
-                            ' argument%s, %d found [%s].' %
-                            (atom_name, tax_args['args_max'],
+                            'Attribute [%s]: atom [%s] requires a maximum'
+                            ' of %d argument%s, %d found [%s].' %
+                            (attr_base, atom_name, tax_args['args_max'],
                              's' if tax_args['args_max'] > 1 else '',
                              len_atom_args, atom))
-                    args_attr_orig = (
-                        ((attr_orig_in + ', ') if attr_orig_in != '' else '') +
-                        'args ' + atom_name)
                     self.validate_arguments(
                         attr_base,
                         atom, tax_args, atom_args,
-                        args_attr_orig, filtered_atoms)
-                    # print(tax_args)
+                        args_attr_scope, filtered_atoms)
             else:
                 # if not check if arguments are present
                 pass
@@ -281,20 +289,23 @@ GemTaxonomy Info
 
             # import pdb ; pdb.set_trace()
             # print(atom_el)
+        # FIXME return properly values
+        return 1, 2
 
-    def validate(self, taxstr):
-        attribs_name_in = []
-        attribs_in = {}
+    def validate(self, tax_str):
+        attr_name_in = []
+        attr_in = {}
 
-        attrs = taxstr.split('/')
+        attrs = tax_str.split('/')
         for attr in attrs:
-            attr_name, attr_out = self.validate_attribute(attr, attr, '', '', [])
+            attr_name, attr_out = self.validate_attribute(
+                attr, attr, '', '', [])
 
-            if attr_name in attribs_in:
+            if attr_name in attr_in:
                 raise ValueError(
                     'Attribute [%s] multiple declaration,'
                     ' previous: [%s], current [%s]' %
-                    (attr_name, attribs_in[attr_name],
+                    (attr_name, attr_in[attr_name],
                      attr))
-            attribs_name_in.append(attr_name)
-            attribs_in[attr_name] = attr
+            attr_name_in.append(attr_name)
+            attr_in[attr_name] = attr
