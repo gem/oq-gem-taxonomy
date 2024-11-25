@@ -34,7 +34,7 @@ import json
 #   DONE - arguments check if present
 #   DONE  . are optional? if not check '(' character
 #   - if not arguments check syntax
-#   - parameters check if present
+#   - parameters check if present (include scope inheritance and visualizz.)
 #   - if not parameters check syntax
 #
 
@@ -193,9 +193,10 @@ GemTaxonomy Info
         atoms_in = {}
 
         for atom in atoms:
-            print("Atom:      %s" % atom)
+            # print("Atom:      %s" % atom)
+            atom_args_parts = atom.split('(')
+            atom_params_parts = atom.split(':')
             atom_name = atom.split('(')[0].split(':')[0]
-
             if atom_name in filtered_atoms:
                 raise ValueError(
                     'Attribute [%s], scope [%s]: forbidden'
@@ -210,8 +211,13 @@ GemTaxonomy Info
                     'Attribute [%s]: multiple occurrencies of [%s] atom.' %
                     (attr, atom_name))
 
-            tax_atom = next(el for el in self.tax['Atom']
-                            if el['name'] == atom_name)
+            try:
+                tax_atom = next(el for el in self.tax['Atom']
+                                if el['name'] == atom_name)
+            except StopIteration as exc:
+                raise ValueError(
+                    'Attribute [%s]: unknown atom [%s].' %
+                    (attr_base, atom_name))
 
             # check mutex atoms for the same group
             atoms_group_name = {k: v for k, v in atoms_in.items() if
@@ -277,8 +283,11 @@ GemTaxonomy Info
                         atom, tax_args, atom_args,
                         args_attr_scope, filtered_atoms)
             else:
-                # if not check if arguments are present
-                pass
+                # if not args check if arguments are present
+                if len(atom_args_parts) > 1:
+                    raise ValueError(
+                        'Attribute [%s]: argument[s] not expected'
+                        ' for atom [%s].' % (attr_base, atom_name))
 
             if tax_atom['params']:
                 # manage params if declared

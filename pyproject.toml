@@ -9,6 +9,7 @@ dynamic = ["version"]
 dependencies = [
    "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git",
    "parsimonious == 0.10.0",
+   "pytest == 8.3.3",
 ]
 requires-python = ">=3"
 authors = [
@@ -59,3 +60,7 @@ Repository = "https://github.com/gem/oq-gem-taxonomy"
 
 # [project.entry-points."spam.magical"]
 # tomatoes = "spam:main_tomatoes"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"

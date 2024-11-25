@@ -25,4 +25,8 @@ def info():
 
 def validate():
     gt = GemTaxonomy()
-    gt.validate(sys.argv[1])
+    try:
+        gt.validate(sys.argv[1])
+    except ValueError as exc:
+        print(dir(exc))
+        print(exc)
