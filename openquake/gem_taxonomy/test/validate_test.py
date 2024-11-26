@@ -18,6 +18,8 @@
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
 from parsimonious.exceptions import ParseError as ParsimParseError
+from parsimonious.exceptions import (IncompleteParseError as
+                                     ParsimIncompleteParseError)
 taxonomy_strings = [
     ("!?", "Rule 'attr' didn't match at '!?' (line 1, column 1)."),
     ("S+S", "Attribute [S+S]: multiple occurrencies of [S] atom."),
@@ -65,6 +67,16 @@ taxonomy_strings = [
      " all the text. The non-matching portion of the text begins with '(W,Z)'"
      " (line 1, column 4)."),
     ("MDD(W;Z)", "Attribute [MDD(W;Z)]: unknown atom [Z]."),
+
+    ("W()", "Rule 'attr' matched in its entirety, but it didn't consume all"
+     " the text. The non-matching portion of the text begins with '()'"
+     " (line 1, column 2)."),
+
+    ("RES:2", None),
+    ("RES:2:2A", "Attribute [RES:2:2A]: atom [RES] requires a maximum of 1"
+     " parameter, 2 found [RES:2:2A]."),
+    ("RES:2WWWWW", "Atom [RES:2WWWWW]: parameters option [2WWWWW] not found."),
+    ("W:123", "TO BE FIXED"),
 ]
 
 
@@ -90,7 +102,8 @@ class ValidateTestCase(unittest.TestCase):
                     str(exc), tax[1],
                     msg='Expected "%s" Found "%s"' %
                     (tax[1], str(exc)))
-            except ParsimParseError as exc:
+            except (ParsimParseError,
+                    ParsimIncompleteParseError) as exc:
                 self.assertEqual(
                     str(exc), tax[1],
                     msg='Expected "%s" Found "%s"' %

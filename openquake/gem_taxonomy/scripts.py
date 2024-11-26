@@ -15,8 +15,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
-from openquake.gem_taxonomy import GemTaxonomy
 import sys
+from openquake.gem_taxonomy import GemTaxonomy
+from parsimonious.exceptions import ParseError as ParsimParseError
+from parsimonious.exceptions import (IncompleteParseError as
+                                     ParsimIncompleteParseError)
 
 
 def info():
@@ -25,8 +28,11 @@ def info():
 
 def validate():
     gt = GemTaxonomy()
+
     try:
         gt.validate(sys.argv[1])
-    except ValueError as exc:
-        print(dir(exc))
-        print(exc)
+    except (ValueError, ParsimParseError,
+            ParsimIncompleteParseError) as exc:
+        print(str(exc))
+        sys.exit(1)
+    sys.exit(0)
