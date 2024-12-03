@@ -39,9 +39,9 @@ import json
 # * Atom scope
 #   DONE - arguments check if present
 #   DONE  . are optional? if not check '(' character
-#   - if not arguments check syntax
+#   DONE - if not arguments check syntax
 #   - parameters check if present (include scope inheritance and visualizz.)
-#   - if not parameters check syntax
+#   DONE - if not parameters check syntax
 #
 
 
@@ -103,34 +103,6 @@ GemTaxonomy Info
                             if ggr_child.expr.name == 'atom':
                                 tree_atoms.append(ggr_child)
         return tree_atoms
-
-    # TODO: TO BE FIXED
-    def extract_parameters(self, atom):
-        atom_params = []
-        tree = self.attr_grammar.parse(atom)
-
-        if (tree.expr.name != "attr" or len(tree.children) < 1 or
-                tree.children[0].expr.name != 'atom'):
-            raise ValueError('Syntax error for atom'
-                             ' list parameters [%s].' %
-                             atom)
-        atom_tree = tree.children[0]
-
-        if len(atom_tree.children) != 3:
-            raise ValueError('Syntax error for atom'
-                             ' list parameters [%s].' %
-                             atom)
-        for params_tree in atom_tree.children[2].children:
-            if params_tree.expr.name != 'atom_params':
-                raise ValueError('Syntax error for atom'
-                                 ' list parameters [%s].' %
-                                 atom)
-            if len(params_tree.children) != 2:
-                raise ValueError('Syntax error for atom'
-                                 ' list parameters [%s].' %
-                                 atom)
-            atom_params.append(params_tree.children[1].text)
-        return atom_params
 
     def args__filtered_attribute(self, attribute_name, filtered_atoms):
         return {'args_type': 'filtered_attribute',
@@ -350,43 +322,38 @@ GemTaxonomy Info
                         ' for atom [%s].' % (attr_base, atom_name))
 
             if tax_atom['params']:
+                len_params = len(params)
                 tax_params = json.loads(tax_atom['params'])
                 params_min = (tax_params['params_min'] if
-                              hasattr(tax_params, 'params_min') else 1)
+                              'params_min' in tax_params else 1)
 
-                if (params_min > 0 or len(atom.split(':')) > 1):
-                    # get parameters if declared
-                    atom_params = self.extract_parameters(atom)
-                    len_atom_params = len(atom_params)
-                    if len(atom_params) < params_min:
-                        raise ValueError(
-                            'Attribute [%s]: atom %s requires at least'
-                            ' %d parameter%s, %d found [%s].' %
-                            (attr_base, atom_name, params_min,
-                             's' if params_min > 1 else '',
-                             len_atom_params, atom))
-                    if ('params_max' in tax_params and
-                            len_atom_params > tax_params['params_max']):
-                        raise ValueError(
-                            'Attribute [%s]: atom [%s] requires a maximum'
-                            ' of %d parameter%s, %d found [%s].' %
-                            (attr_base, atom_name, tax_params['params_max'],
-                             's' if tax_params['params_max'] > 1 else '',
-                             len_atom_params, atom))
+                if len_params < params_min:
+                    raise ValueError(
+                        'Attribute [%s]: atom %s requires at least'
+                        ' %d parameter%s, %d found [%s].' %
+                        (attr_base, atom_name, params_min,
+                         's' if params_min > 1 else '',
+                         len_params, atom))
+                if ('params_max' in tax_params and
+                        len_params > tax_params['params_max']):
+                    raise ValueError(
+                        'Attribute [%s]: atom [%s] requires a maximum'
+                        ' of %d parameter%s, %d found [%s].' %
+                        (attr_base, atom_name, tax_params['params_max'],
+                         's' if tax_params['params_max'] > 1 else '',
+                         len_params, atom))
 
-                    self.validate_parameters(
-                        attr_base,
-                        atom, tax_params, atom_params,
-                        attr_scope)
+                self.validate_parameters(
+                    attr_base,
+                    atom, tax_params, params,
+                    attr_scope)
             else:
                 if len(params) > 0:
                     raise ValueError(
                         'Attribute [%s]: no parameters expected'
-                        ' for atom [%s] (%s)' %
+                        ' for atom [%s], found (%s)' %
                         (attr_base, atom_name, params))
 
-            # import pdb ; pdb.set_trace()
-            # print(atom_el)
         # FIXME return properly values
         return 1, 2
 
