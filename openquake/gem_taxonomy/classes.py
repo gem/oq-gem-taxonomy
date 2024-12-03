@@ -38,6 +38,8 @@ import json
 #
 # * Atom scope
 #   DONE - arguments check if present
+#   DONE - arguments as filtered_attributes
+#   DONE - arguments as filtered_parameters
 #   DONE  . are optional? if not check '(' character
 #   DONE - if not arguments check syntax
 #   - parameters check if present (include scope inheritance and visualizz.)

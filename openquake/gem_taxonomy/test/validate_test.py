@@ -33,6 +33,9 @@ taxonomy_strings = [
 
     ("HYB(C;S)", None),
     ("HYB(C;S;W)", None),
+    ("HYB(LFBR;LPB)", "For attribute [LFBR] discordant"
+     " [atom/argument]->[attribute] associations: [args HYB]->[material] vs"
+     " [LFBR]->[llrs]"),
     ("MDD(C;LO)", "For attribute [LO] discordant [atom/argument]->[attribute]"
      " associations: [args MDD]->[material] vs [LO]->[llrs]"),
     ("MDD(C;S;W)", "Attribute [MDD(C;S;W)]: atom [MDD] requires a maximum of"
