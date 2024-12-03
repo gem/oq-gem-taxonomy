@@ -22,6 +22,11 @@ from .version import __version__
 import re
 import json
 
+#
+# Refact atom name + if there are args + if there are params with single
+# grammar parse
+#
+
 # * Taxonomy scope
 #   DONE - check attr dup
 #   - attributes order
@@ -83,73 +88,23 @@ GemTaxonomy Info
         #         new_dict[k + 'Dict'] = {x['name']: x for x in self.tax[k]}
         # self.tax.update(new_dict)
 
-    def extract_atoms(self, attribute):
-        atoms = []
-        tree = self.attr_grammar.parse(attribute)
+    def extract_atoms(self, tree_attr):
+        tree_atoms = []
 
-        if tree.expr.name == 'attr':
-            if len(tree.children) != 2:
+        if tree_attr.expr.name == 'attr':
+            if len(tree_attr.children) != 2:
                 raise ValueError('Taxonomy: malformed attribute')
-            for child in tree.children:
+            for child in tree_attr.children:
                 if child.expr.name == 'atom':
-                    atoms.append(child.text)
+                    tree_atoms.append(child)
                 else:
                     for gr_child in child.children:
                         for ggr_child in gr_child.children:
                             if ggr_child.expr.name == 'atom':
-                                atoms.append(ggr_child.text)
-        return atoms
+                                tree_atoms.append(ggr_child)
+        return tree_atoms
 
-    def extract_arguments(self, atom):
-        atom_args = []
-        tree = self.attr_grammar.parse(atom)
-
-        if tree.expr.name != 'attr':
-            raise ValueError('Syntax error for atom'
-                             ' list arguments [%s].' %
-                             atom)
-
-        # find the args_tree element
-        args_tree = _find_node(tree, 'atom_args')
-
-        # if not found return empty list
-        if args_tree is None:
-            return atom_args
-
-        # if no children found return empty list
-        if not hasattr(args_tree, 'children'):
-            return atom_args
-
-        stp = 0
-        for child in args_tree.children:
-            if stp == 0:  # check for open round bracket
-                if child.expr.as_rule() == "'('":
-                    stp = 1
-            elif stp == 1:  # get first arg
-                if child.expr.name == 'attr':
-                    atom_args.append(child.text)
-                    stp = 2
-            elif stp == 2:  # get other args (zero or more)
-                if child.expr.as_rule() == "(';' attr)*":
-                    if len(child.children) > 0:
-                        for gchild in child.children:
-                            if gchild.expr.as_rule() != "';' attr":
-                                raise ValueError(
-                                    'Syntax error after first atom'
-                                    ' list argument [%s].' %
-                                    atom)
-                            ggchild = gchild.children[1]
-                            atom_args.append(ggchild.text)
-                elif child.expr.as_rule() == "')'":
-                    # properly closure of arguments list, return it.
-                    return atom_args
-                else:
-                    raise ValueError(
-                        'Syntax error for atom arguments'
-                        ' list [%s].' % atom)
-        raise ValueError(
-            'Unexpected syntax argument after the first [%s].' % atom)
-
+    # TODO: TO BE FIXED
     def extract_parameters(self, atom):
         atom_params = []
         tree = self.attr_grammar.parse(atom)
@@ -187,7 +142,7 @@ GemTaxonomy Info
                 'atomsgroup_name': atomsgroup_name,
                 'filtered_atoms': filtered_atoms}
 
-    def validate_arguments(self, attr_base, atom_anc, tax_args, atom_args,
+    def validate_arguments(self, attr_base, atom_anc, tax_args, tree_args,
                            atom_args_orig_in, filtered_atoms):
         """
         atom_anc: atom string included args and params
@@ -206,9 +161,9 @@ GemTaxonomy Info
                 (atom_anc, tax_args['type']))
 
         if arg_type_name == 'filtered_attribute':
-            for attr_str in atom_args:
+            for tree_arg in tree_args:
                 self.validate_attribute(
-                    attr_base, attr_str,
+                    attr_base, tree_arg,
                     atom_args_orig_in,
                     args_info['attribute_name'],
                     list(set(filtered_atoms).union(
@@ -238,7 +193,6 @@ GemTaxonomy Info
                         'Atom [%s]: parameters option [%s] not found.' %
                         (atom_anc, atom_param))
 
-
         # if (arg_type_name == 'filtered_attribute'
         #         or arg_type_name == 'filtered_atomsgroup'):
         #     args_info = eval('self.args__' + tax_args['type'])
@@ -256,30 +210,58 @@ GemTaxonomy Info
         #             list(set(filtered_atoms).union(
         #                 set(args_info['filtered_atoms']))))
 
-    def validate_attribute(self, attr_base, attr, attr_scope,
+    def validate_attribute(self, attr_base, tree_attr, attr_scope,
                            attr_name, filtered_atoms):
         """
         attr_base:      full attribute (recursion invariant)
-        attr:           current evaluated attribute
+        tree_attr:      current evaluated attribute tree
         attr_scope:     linearized description of current atom scope
                         (e.g. if already argument...)
         attr_name:      already specified when call as arguments check
         filtered_atoms: list of prohibited atoms (from arguments check)
         """
-        atoms = self.extract_atoms(attr)
+        attr = tree_attr.text
+        tree_atoms = self.extract_atoms(tree_attr)
         atom_names_in = []
         atoms_in = {}
 
-        for atom in atoms:
-            # print("Atom:      %s" % atom)
-            atom_names = re.findall(r"[A-Za-z][A-Za-z0-9]*", atom)
-            if len(atom_names) < 1:
-                # probably never happens because extract_atoms() method
-                # fails earlier
+        for tree_atom in tree_atoms:
+            atom = tree_atom.text
+            if len(tree_atom.children) != 3:
                 raise ValueError(
-                    'Attribute [%s], scope [%s]: element [%s] not'
-                    ' recognized as atom' % (attr_base, attr_scope, atom))
-            atom_name = atom_names[0]
+                    'Attribute [%s], scope [%s]: malformed atom [%s]' % (
+                        attr_base, attr_scope, atom))
+
+            atom_name = tree_atom.children[0].text
+            tree_args = []
+            atom_tree_args = tree_atom.children[1]
+            nchs_args = len(atom_tree_args.children)
+            if nchs_args > 0:
+                atom_tree_args = atom_tree_args.children[0]
+                nchs_args = len(atom_tree_args.children)
+
+                if nchs_args > 2:
+                    if atom_tree_args.children[0].text == '(':
+                        if atom_tree_args.children[nchs_args - 1].text == ')':
+                            tree_args.append(
+                                atom_tree_args.children[1])
+                            if nchs_args > 3:
+                                other_args = (atom_tree_args.children[2]
+                                              .children)
+                                for arg_id in range(0, len(other_args)):
+                                    tree_args.append(
+                                        other_args[arg_id].children[1])
+
+            # IN tree_args the trees for arguments
+            params = []
+            for param_child in tree_atom.children[2].children:
+                if param_child.expr.name != 'atom_params':
+                    raise ValueError(
+                        'Attribute [%s], scope [%s]: for atom [%s]'
+                        ' malformed parameters' % (
+                            attr_base, attr_scope, atom))
+                params.append(param_child.children[1].text)
+
             if atom_name in filtered_atoms:
                 raise ValueError(
                     'Attribute [%s], scope [%s]: forbidden'
@@ -294,6 +276,7 @@ GemTaxonomy Info
                     'Attribute [%s]: multiple occurrencies of [%s] atom.' %
                     (attr, atom_name))
 
+            # search atom in the known list
             try:
                 tax_atom = next(el for el in self.tax['Atom']
                                 if el['name'] == atom_name)
@@ -335,41 +318,33 @@ GemTaxonomy Info
                          tax_atom['name'], tax_atom['attr']))
             if tax_atom['args']:
                 tax_args = json.loads(tax_atom['args'])
+                len_tree_args = len(tree_args)
                 # if args is defined check if are optional and
                 # in the case present
-                if (tax_args['args_min'] > 0 or
-                        len(atom.split('(')) > 1):
-                    # get arguments if declared
-                    atom_args = self.extract_arguments(atom)
-
-                    # check number of arguments
-                    len_atom_args = len(atom_args)
-                    if ('args_min' in tax_args and
-                            len_atom_args < tax_args['args_min']):
+                if ('args_min' in tax_args and
+                        len_tree_args < tax_args['args_min']):
                         raise ValueError(
                             'Attribute [%s]: atom %s requires at least'
                             ' %d argument%s, %d found [%s].' %
                             (attr_base, atom_name, tax_args['args_min'],
                              's' if tax_args['args_min'] > 1 else '',
-                             len_atom_args, atom))
+                             len_tree_args, atom))
 
-                    if ('args_max' in tax_args and
-                            len_atom_args > tax_args['args_max']):
-                        raise ValueError(
-                            'Attribute [%s]: atom [%s] requires a maximum'
-                            ' of %d argument%s, %d found [%s].' %
-                            (attr_base, atom_name, tax_args['args_max'],
-                             's' if tax_args['args_max'] > 1 else '',
-                             len_atom_args, atom))
-                    self.validate_arguments(
-                        attr_base,
-                        atom, tax_args, atom_args,
-                        args_attr_scope, filtered_atoms)
+                if ('args_max' in tax_args and
+                        len_tree_args > tax_args['args_max']):
+                    raise ValueError(
+                        'Attribute [%s]: atom [%s] requires a maximum'
+                        ' of %d argument%s, %d found [%s].' %
+                        (attr_base, atom_name, tax_args['args_max'],
+                         's' if tax_args['args_max'] > 1 else '',
+                         len_tree_args, atom))
+                self.validate_arguments(
+                    attr_base,
+                    atom, tax_args, tree_args,
+                    args_attr_scope, filtered_atoms)
             else:
-                args = self.extract_arguments(atom)
-
                 # if not args check if arguments are present
-                if len(args) > 0:
+                if len(tree_args) > 0:
                     raise ValueError(
                         'Attribute [%s]: argument[s] not expected'
                         ' for atom [%s].' % (attr_base, atom_name))
@@ -418,8 +393,10 @@ GemTaxonomy Info
 
         attrs = tax_str.split('/')
         for attr in attrs:
+            tree_attr = self.attr_grammar.parse(attr)
+
             attr_name, attr_out = self.validate_attribute(
-                attr, attr, '', '', [])
+                attr, tree_attr, '', '', [])
 
             if attr_name in attr_in:
                 raise ValueError(
