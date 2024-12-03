@@ -86,6 +86,10 @@ taxonomy_strings = [
     ("IRI+IRP(TOR;CHV)", "Attribute [IRI+IRP(TOR;CHV)], atom [CHV], expected"
      " atomsgroup [plan_irregularity], found atom [CHV] of atomsgroup"
      " [vertical_irregularity]."),
+    ("MIX(RES;MIX(COM;GOV))", "Attribute [MIX(RES;MIX(COM;GOV))],"
+     " forbidden atom found [MIX]."),
+    ("MIX(RES;COM;GOV)", None),
+
 ]
 
 

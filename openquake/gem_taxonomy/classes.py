@@ -136,11 +136,11 @@ GemTaxonomy Info
             # args_info['atomsgroup_name']
             # args_info['filtered_atoms']
             for tree_arg in tree_args:
-                if tree_arg.children[0].text not in self.tax['AtomDict']:
+                atom_name = tree_arg.children[0].children[0].text
+                if atom_name not in self.tax['AtomDict']:
                     raise ValueError(
                         'Attribute [%s]: unknown atom [%s].' % (
                             attr_base, tree_arg.text))
-                atom_name = tree_arg.children[0].text
                 tax_atom = self.tax['AtomDict'][atom_name]
 
                 # check if current atom group is what expected for these args
