@@ -45,16 +45,6 @@ import json
 #
 
 
-def _find_node(node, name):
-    if node.expr.name == name:
-        return node
-    for item in node.children:
-        ret = _find_node(item, name)
-        if ret:
-            return ret
-    return None
-
-
 class GemTaxonomy:
     # method to test package infrastructure
     @staticmethod
@@ -117,9 +107,11 @@ GemTaxonomy Info
     def validate_arguments(self, attr_base, atom_anc, tax_args, tree_args,
                            atom_args_orig_in, filtered_atoms):
         """
+        attr_base: attribute base
         atom_anc: atom string included args and params
         tax_args: 'args' field of gem_tax['Atom'] element
-        atom_args: list of arguments
+        tree_args: list of tree arguments
+        atom_args_orig_in: flattened hierarchy of current args
         filtered_atoms: optional list of atoms not allowed as arguments
         """
         arg_type_name = tax_args['type'].split('(')[0]
@@ -140,6 +132,25 @@ GemTaxonomy Info
                     args_info['attribute_name'],
                     list(set(filtered_atoms).union(
                         set(args_info['filtered_atoms']))))
+        elif arg_type_name == 'filtered_atomsgroup':
+            # args_info['atomsgroup_name']
+            # args_info['filtered_atoms']
+            for tree_arg in tree_args:
+                if tree_arg.children[0].text not in self.tax['AtomDict']:
+                    raise ValueError(
+                        'Attribute [%s]: unknown atom [%s].' % (
+                            attr_base, tree_arg.text))
+                atom_name = tree_arg.children[0].text
+                tax_atom = self.tax['AtomDict'][atom_name]
+
+                # check if current atom group is what expected for these args
+                if tax_atom['group'] != args_info['atomsgroup_name']:
+                    raise ValueError(
+                        'Attribute [%s], atom [%s], expected atomsgroup [%s],'
+                        ' found atom [%s] of atomsgroup [%s].' % (
+                            attr_base, tree_arg.text,
+                            args_info['atomsgroup_name'],
+                            atom_name, tax_atom['group']))
 
     def validate_parameters(self, attr_base, atom_anc, tax_params, atom_params,
                             atom_params_orig_in):
@@ -249,13 +260,11 @@ GemTaxonomy Info
                     (attr, atom_name))
 
             # search atom in the known list
-            try:
-                tax_atom = next(el for el in self.tax['Atom']
-                                if el['name'] == atom_name)
-            except StopIteration as exc:
+            if atom_name not in self.tax['AtomDict']:
                 raise ValueError(
                     'Attribute [%s]: unknown atom [%s].' %
                     (attr_base, atom_name))
+            tax_atom = self.tax['AtomDict'][atom_name]
 
             # check mutex atoms for the same group
             atoms_group_name = {k: v for k, v in atoms_in.items() if

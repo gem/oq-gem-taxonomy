@@ -82,6 +82,10 @@ taxonomy_strings = [
     ("H:3", None),
     ("H:3:5", "Attribute [H:3:5]: atom [H] requires a maximum of 1 parameter,"
      " 2 found [H:3:5]."),
+    ("IRI+IRP(TOR;REC)", None),
+    ("IRI+IRP(TOR;CHV)", "Attribute [IRI+IRP(TOR;CHV)], atom [CHV], expected"
+     " atomsgroup [plan_irregularity], found atom [CHV] of atomsgroup"
+     " [vertical_irregularity]."),
 ]
 
 
