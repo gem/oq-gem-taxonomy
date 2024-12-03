@@ -151,6 +151,10 @@ GemTaxonomy Info
                             attr_base, tree_arg.text,
                             args_info['atomsgroup_name'],
                             atom_name, tax_atom['group']))
+                if atom_name in args_info['filtered_atoms']:
+                    raise ValueError(
+                        'Attribute [%s], forbidden atom found [%s].' % (
+                            attr_base, atom_name))
 
     def validate_parameters(self, attr_base, atom_anc, tax_params, atom_params,
                             atom_params_orig_in):
