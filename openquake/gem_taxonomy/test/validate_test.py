@@ -76,7 +76,8 @@ taxonomy_strings = [
     ("RES:2:2A", "Attribute [RES:2:2A]: atom [RES] requires a maximum of 1"
      " parameter, 2 found [RES:2:2A]."),
     ("RES:2WWWWW", "Atom [RES:2WWWWW]: parameters option [2WWWWW] not found."),
-    ("W:123", "TO BE FIXED"),
+    ("W:123", "Attribute [W:123]: no parameters expected for"
+     " atom [W] (['123'])"),
 ]
 
 

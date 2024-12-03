@@ -379,8 +379,11 @@ GemTaxonomy Info
                         atom, tax_params, atom_params,
                         attr_scope)
             else:
-                # if not check if parameters are present
-                pass
+                if len(params) > 0:
+                    raise ValueError(
+                        'Attribute [%s]: no parameters expected'
+                        ' for atom [%s] (%s)' %
+                        (attr_base, atom_name, params))
 
             # import pdb ; pdb.set_trace()
             # print(atom_el)
