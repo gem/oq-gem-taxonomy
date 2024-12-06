@@ -93,6 +93,29 @@ taxonomy_strings = [
      " forbidden atom found [MIX]."),
     ("MIX(RES;COM;GOV)", None),
 
+    ("LFM+DCW:-0.5", "Atom [DCW:-0.5]: value [-0.5] less then min value"
+     " (0.000000)."),
+    ("LFM+DCW:0.5", None),
+    ("LFM+DCW:1.5", "Atom [DCW:1.5]: value [1.5] greater then max value"
+     " (1.000000)."),
+    ("LFM+DCW:1.5.3.2", "Atom [DCW:1.5.3.2]: value [1.5.3.2] not valid"
+     " float."),
+
+    ("HBAPP:-1", "Atom [HBAPP:-1]: value [-1] less then min value"
+     " (0.000000)."),
+    ("HBAPP:1", None),
+    ("HBAPP:1000", None),
+    ("HBAPP:11ss22", "Atom [HBAPP:11ss22]: value 11ss22 not valid int."),
+
+    ("HD:0", None),
+    ("HD:0.1", None),
+    ("HD:45.5", None),
+    ("HD:89.9", None),
+    ("HD:90.0", "Atom [HD:90.0]: value [90.0] greater or equal then max value"
+     " (90.000000)."),
+
+    ("H:<0", "Atom [H:<0]: incorrect float inequality: no valid values below"
+     " min value (0.000000)."),
 ]
 
 

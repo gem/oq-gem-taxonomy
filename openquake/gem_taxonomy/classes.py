@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 from parsimonious.grammar import Grammar
+from parsimonious.exceptions import ParseError as ParsimParseError
+from parsimonious.exceptions import (IncompleteParseError as
+                                     ParsimIncompleteParseError)
 from openquake.gem_taxonomy_data import GemTaxonomyData
 from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
-import re
 import json
 
 #
@@ -30,6 +32,7 @@ import json
 # * Taxonomy scope
 #   DONE - check attr dup
 #   - attributes order
+#   - difference between arguments
 #
 # * Attribute scope
 #   DONE - check atom dup
@@ -37,12 +40,15 @@ import json
 #   - atoms order
 #
 # * Atom scope
+#   - missing atom dependencies
+#   - difference between arguments
 #   DONE - arguments check if present
 #   DONE - arguments as filtered_attributes
 #   DONE - arguments as filtered_parameters
 #   DONE  . are optional? if not check '(' character
 #   DONE - if not arguments check syntax
 #   - parameters check if present (include scope inheritance and visualizz.)
+#   - parameters range validation (a < b)
 #   DONE - if not parameters check syntax
 #
 
@@ -69,7 +75,13 @@ GemTaxonomy Info
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
-                atom_params = ":" ~r"[A-Z0-9<>][A-Z0-9-]*"
+                atom_params = ":" ~r"[A-Za-z0-9<>-][A-Za-z0-9.+-]*"
+                """)
+
+            # flo = ~r"[0-9]+"
+            self.rangefloat_grammar = Grammar(r"""
+                range = flo "-" flo
+                flo = ~r"[0-9-]?" ~r"[0-9.]*" ( ~r"e[+-]?[0-9]+" )?
                 """)
 
         self.gtd = GemTaxonomyData()
@@ -80,21 +92,21 @@ GemTaxonomy Info
         #         new_dict[k + 'Dict'] = {x['name']: x for x in self.tax[k]}
         # self.tax.update(new_dict)
 
-    def extract_atoms(self, tree_attr):
-        tree_atoms = []
+    def extract_atoms(self, attr_tree):
+        atoms_trees = []
 
-        if tree_attr.expr.name == 'attr':
-            if len(tree_attr.children) != 2:
+        if attr_tree.expr.name == 'attr':
+            if len(attr_tree.children) != 2:
                 raise ValueError('Taxonomy: malformed attribute')
-            for child in tree_attr.children:
+            for child in attr_tree.children:
                 if child.expr.name == 'atom':
-                    tree_atoms.append(child)
+                    atoms_trees.append(child)
                 else:
                     for gr_child in child.children:
                         for ggr_child in gr_child.children:
                             if ggr_child.expr.name == 'atom':
-                                tree_atoms.append(ggr_child)
-        return tree_atoms
+                                atoms_trees.append(ggr_child)
+        return atoms_trees
 
     def args__filtered_attribute(self, attribute_name, filtered_atoms):
         return {'args_type': 'filtered_attribute',
@@ -113,7 +125,7 @@ GemTaxonomy Info
         atom_anc: atom string included args and params
         tax_args: 'args' field of gem_tax['Atom'] element
         tree_args: list of tree arguments
-        atom_args_orig_in: flattened hierarchy of current args
+        atom_args_orig_in: flattened hierarchy of current atom
         filtered_atoms: optional list of atoms not allowed as arguments
         """
         arg_type_name = tax_args['type'].split('(')[0]
@@ -158,15 +170,79 @@ GemTaxonomy Info
                         'Attribute [%s], forbidden atom found [%s].' % (
                             attr_base, atom_name))
 
-    def validate_parameters(self, attr_base, atom_anc, tax_params, atom_params,
-                            atom_params_orig_in):
-        """
-        atom_anc: atom string included args and params
-        tax_args: 'args' field of gem_tax['Atom'] element
-        atom_args: list of arguments
-        """
+    def params_get(self, tax_params, attr):
+        if attr not in tax_params:
+            return None
         param_type_name = tax_params['type'].split('(')[0]
-        atom_name = re.findall(r"[A-Za-z][A-Za-z0-9]*", atom_anc)[0]
+        if (param_type_name == 'float' or
+                param_type_name == 'rangeable_float'):
+            return float(tax_params[attr])
+        elif (param_type_name == 'int' or
+              param_type_name == 'rangeable_int'):
+            return int(tax_params[attr])
+        else:
+            return None
+
+    def check_single_value(self, atom_anc, param_type_name,
+                           atom_param, tax_params):
+        if param_type_name == 'float':
+            try:
+                v = float(atom_param)
+            except ValueError:
+                raise ValueError(
+                    'Atom [%s]: value [%s] not valid float.' %
+                    (atom_anc, atom_param))
+        elif param_type_name == 'int':
+            try:
+                v = int(atom_param)
+            except ValueError:
+                raise ValueError(
+                    'Atom [%s]: value %s not valid int.' %
+                    (atom_anc, atom_param))
+
+        if 'min' in tax_params:
+            v_min = self.params_get(tax_params, 'min')
+            m_incl = (tax_params['min_incl'] if 'min_incl' in tax_params
+                      else True)
+            if (m_incl and v < v_min) or (not m_incl and v <= v_min):
+                raise ValueError(
+                    'Atom [%s]: value [%s] less%s'
+                    ' then min value (%f).' %
+                    (atom_anc, atom_param,
+                     (" or equal" if not m_incl else ""),
+                     tax_params['min']))
+
+        if 'max' in tax_params:
+            v_max = self.params_get(tax_params, 'max')
+            m_incl = (tax_params['max_incl'] if 'max_incl' in tax_params
+                      else True)
+            if (m_incl and v > v_max) or (not m_incl and v >= v_max):
+                raise ValueError(
+                    'Atom [%s]: value [%s] greater%s'
+                    ' then max value (%f).' %
+                    (atom_anc, atom_param,
+                     (" or equal" if not m_incl else ""),
+                     tax_params['max']))
+
+        return v
+
+    def validate_parameters(self, attr_base, atom_tree, tax_params,
+                            atom_params, atom_params_orig_in):
+        """
+        atom_args: list of arguments
+
+
+        attr_base: attribute base
+        atom_tree: atom tree included args and params
+        tax_params: 'params' field of gem_tax['Atom'] element
+        atom_params: list of parameters (strings)
+        atom_params_orig_in: flattened hierarchy of current atom
+        """
+        # NOTE: currently not parameter types with args but we can foresee them
+        param_type_name = tax_params['type'].split('(')[0]
+
+        atom_anc = atom_tree.text
+        atom_name = atom_tree.children[0].text
         if param_type_name == 'options':
             if atom_name not in self.tax['Param']:
                 raise ValueError(
@@ -181,6 +257,65 @@ GemTaxonomy Info
                     raise ValueError(
                         'Atom [%s]: parameters option [%s] not found.' %
                         (atom_anc, atom_param))
+        elif param_type_name == 'float' or param_type_name == 'int':
+            for atom_param in atom_params:
+                self.check_single_value(atom_anc, param_type_name,
+                                        atom_param, tax_params)
+        elif (param_type_name == 'rangeable_float' or
+              param_type_name == 'rangeable_int'):
+            # import pdb ; pdb.set_trace()
+            single_type_name = param_type_name[10:]
+            for atom_param in atom_params:
+                # inequality case
+                if atom_param[0] in ['<', '>']:
+                    flo = self.check_single_value(
+                        atom_anc, single_type_name,
+                        atom_param[1:], tax_params)
+                    if 'min' in tax_params:
+                        if atom_param[0] == '<' and flo <= tax_params['min']:
+                            raise ValueError(
+                                'Atom [%s]: incorrect float inequality:'
+                                ' no valid values below min value (%f).' %
+                                (atom_anc, float(tax_params['min'])))
+                    if 'max' in tax_params:
+                        if atom_param[0] == '>' and flo >= tax_params['max']:
+                            raise ValueError(
+                                'Atom [%s]: incorrect float inequality:'
+                                ' no valid values above max value (%f).' %
+                                (atom_anc, float(tax_params['min'])))
+                else:
+                    if param_type_name == 'rangeable_float':
+                        try:
+                            rangefloat_tree = self.rangefloat_grammar.parse(
+                                atom_param)
+                            if (rangefloat_tree.expr.name != 'range' or
+                                    len(rangefloat_tree.children) != 3):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect float range'
+                                    ' syntax parameter found[%s].' %
+                                    (atom_anc, atom_param))
+                            flos = [rangefloat_tree.children[0],
+                                    rangefloat_tree.children[2]]
+                            if (flos[0].expr.name != 'flo' or
+                                    flos[1].expr.name != 'flo'):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect float range'
+                                    ' syntax parameter found[%s].' %
+                                    (atom_anc, atom_param))
+                            for flo_idx in range(0, 2):
+                                self.check_single_value(
+                                    atom_anc, 'float',
+                                    flos[flo_idx].text, tax_params)
+                        except (ParsimParseError,
+                                ParsimIncompleteParseError) as exc:
+                            # precise single value case
+                            self.check_single_value(
+                                atom_anc, 'float',
+                                atom_param, tax_params)
+                    elif param_type_name == 'rangeable_int':
+                        # TODO FIXME
+                        print('TODO')
+                        raise ValueError('NOT YET IMPLEMENTED')
 
         # if (arg_type_name == 'filtered_attribute'
         #         or arg_type_name == 'filtered_atomsgroup'):
@@ -199,31 +334,31 @@ GemTaxonomy Info
         #             list(set(filtered_atoms).union(
         #                 set(args_info['filtered_atoms']))))
 
-    def validate_attribute(self, attr_base, tree_attr, attr_scope,
+    def validate_attribute(self, attr_base, attr_tree, attr_scope,
                            attr_name, filtered_atoms):
         """
         attr_base:      full attribute (recursion invariant)
-        tree_attr:      current evaluated attribute tree
+        attr_tree:      current evaluated attribute tree
         attr_scope:     linearized description of current atom scope
                         (e.g. if already argument...)
         attr_name:      already specified when call as arguments check
         filtered_atoms: list of prohibited atoms (from arguments check)
         """
-        attr = tree_attr.text
-        tree_atoms = self.extract_atoms(tree_attr)
+        attr = attr_tree.text
+        atoms_trees = self.extract_atoms(attr_tree)
         atom_names_in = []
         atoms_in = {}
 
-        for tree_atom in tree_atoms:
-            atom = tree_atom.text
-            if len(tree_atom.children) != 3:
+        for atom_tree in atoms_trees:
+            atom = atom_tree.text
+            if len(atom_tree.children) != 3:
                 raise ValueError(
                     'Attribute [%s], scope [%s]: malformed atom [%s]' % (
                         attr_base, attr_scope, atom))
 
-            atom_name = tree_atom.children[0].text
+            atom_name = atom_tree.children[0].text
             tree_args = []
-            atom_tree_args = tree_atom.children[1]
+            atom_tree_args = atom_tree.children[1]
             nchs_args = len(atom_tree_args.children)
             if nchs_args > 0:
                 atom_tree_args = atom_tree_args.children[0]
@@ -243,7 +378,7 @@ GemTaxonomy Info
 
             # IN tree_args the trees for arguments
             params = []
-            for param_child in tree_atom.children[2].children:
+            for param_child in atom_tree.children[2].children:
                 if param_child.expr.name != 'atom_params':
                     raise ValueError(
                         'Attribute [%s], scope [%s]: for atom [%s]'
@@ -360,7 +495,7 @@ GemTaxonomy Info
 
                 self.validate_parameters(
                     attr_base,
-                    atom, tax_params, params,
+                    atom_tree, tax_params, params,
                     attr_scope)
             else:
                 if len(params) > 0:
@@ -378,10 +513,10 @@ GemTaxonomy Info
 
         attrs = tax_str.split('/')
         for attr in attrs:
-            tree_attr = self.attr_grammar.parse(attr)
+            attr_tree = self.attr_grammar.parse(attr)
 
             attr_name, attr_out = self.validate_attribute(
-                attr, tree_attr, '', '', [])
+                attr, attr_tree, '', '', [])
 
             if attr_name in attr_in:
                 raise ValueError(
