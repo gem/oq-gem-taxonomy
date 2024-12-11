@@ -102,11 +102,12 @@ taxonomy_strings = [
      " float."),
 
     ("HBAPP:-1", "Atom [HBAPP:-1]: value [-1] less then min value"
-     " (0.000000)."),
+     " (0)."),
     ("HBAPP:1", None),
     ("HBAPP:1000", None),
     ("HBAPP:11ss22", "Atom [HBAPP:11ss22]: value 11ss22 not valid int."),
 
+    # float
     ("HD:0", None),
     ("HD:0.1", None),
     ("HD:45.5", None),
@@ -114,8 +115,31 @@ taxonomy_strings = [
     ("HD:90.0", "Atom [HD:90.0]: value [90.0] greater or equal then max value"
      " (90.000000)."),
 
-    ("H:<0", "Atom [H:<0]: incorrect float inequality: no valid values below"
-     " min value (0.000000)."),
+    # rangeable_float
+    ("HF:-3", "Atom [HF:-3]: value [-3] less then min value (0.000000)."),
+    ("HF:<-3", "Atom [HF:<-3]: value [-3] less then min value (0.000000)."),
+    ("HF:>-3", "Atom [HF:>-3]: value [-3] less then min value (0.000000)."),
+    ("HF:<3", None),
+    ("HF:>3", None),
+    ("HF:<0", "Atom [HF:<0]: incorrect float inequality, no valid values below"
+     " min value (0)."),
+    ("HF:0-3", None),
+    ("HF:3-6", None),
+    ("HF:3-0", "Atom [HF:3-0]: incorrect floats range: first endpoint"
+     " is greater then or equal to the second (3-0)"),
+
+    # rangeable_int
+    ("H:-3", "Atom [H:-3]: value [-3] less then min value (0)."),
+    ("H:<-3", "Atom [H:<-3]: value [-3] less then min value (0)."),
+    ("H:>-3", "Atom [H:>-3]: value [-3] less then min value (0)."),
+    ("H:<3", None),
+    ("H:>3", None),
+    ("H:<0", "Atom [H:<0]: incorrect int inequality, no valid values below"
+     " min value (0)."),
+    ("H:0-3", None),
+    ("H:3-6", None),
+    ("H:3-0", "Atom [H:3-0]: incorrect integers range: first endpoint"
+     " is greater then or equal to the second (3-0)"),
 ]
 
 

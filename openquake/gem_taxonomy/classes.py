@@ -23,6 +23,7 @@ from openquake.gem_taxonomy_data import GemTaxonomyData
 from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
 import json
+import re
 
 #
 # Refact atom name + if there are args + if there are params with single
@@ -82,6 +83,10 @@ GemTaxonomy Info
             self.rangefloat_grammar = Grammar(r"""
                 range = flo "-" flo
                 flo = ~r"[0-9-]?" ~r"[0-9.]*" ( ~r"e[+-]?[0-9]+" )?
+                """)
+            self.rangeint_grammar = Grammar(r"""
+                range = inte "-" inte
+                inte = ~r"[0-9-]" ~r"[0-9]*"
                 """)
 
         self.gtd = GemTaxonomyData()
@@ -185,6 +190,8 @@ GemTaxonomy Info
 
     def check_single_value(self, atom_anc, param_type_name,
                            atom_param, tax_params):
+        ty_form = '%f' if param_type_name == 'float' else (
+            '%d' if param_type_name == 'int' else '%s')
         if param_type_name == 'float':
             try:
                 v = float(atom_param)
@@ -205,9 +212,10 @@ GemTaxonomy Info
             m_incl = (tax_params['min_incl'] if 'min_incl' in tax_params
                       else True)
             if (m_incl and v < v_min) or (not m_incl and v <= v_min):
+                # import pdb ; pdb.set_trace()
                 raise ValueError(
-                    'Atom [%s]: value [%s] less%s'
-                    ' then min value (%f).' %
+                    ('Atom [%s]: value [%s] less%s then min value ('
+                     + ty_form + ').') %
                     (atom_anc, atom_param,
                      (" or equal" if not m_incl else ""),
                      tax_params['min']))
@@ -218,8 +226,8 @@ GemTaxonomy Info
                       else True)
             if (m_incl and v > v_max) or (not m_incl and v >= v_max):
                 raise ValueError(
-                    'Atom [%s]: value [%s] greater%s'
-                    ' then max value (%f).' %
+                    ('Atom [%s]: value [%s] greater%s'
+                     ' then max value (' + ty_form + ').') %
                     (atom_anc, atom_param,
                      (" or equal" if not m_incl else ""),
                      tax_params['max']))
@@ -263,35 +271,36 @@ GemTaxonomy Info
                                         atom_param, tax_params)
         elif (param_type_name == 'rangeable_float' or
               param_type_name == 'rangeable_int'):
-            # import pdb ; pdb.set_trace()
             single_type_name = param_type_name[10:]
             for atom_param in atom_params:
                 # inequality case
                 if atom_param[0] in ['<', '>']:
-                    flo = self.check_single_value(
+                    val = self.check_single_value(
                         atom_anc, single_type_name,
                         atom_param[1:], tax_params)
                     if 'min' in tax_params:
-                        if atom_param[0] == '<' and flo <= tax_params['min']:
+                        if atom_param[0] == '<' and val <= tax_params['min']:
                             raise ValueError(
-                                'Atom [%s]: incorrect float inequality:'
-                                ' no valid values below min value (%f).' %
-                                (atom_anc, float(tax_params['min'])))
+                                'Atom [%s]: incorrect %s inequality,'
+                                ' no valid values below min value (%s).' %
+                                (atom_anc, single_type_name,
+                                 tax_params['min']))
                     if 'max' in tax_params:
-                        if atom_param[0] == '>' and flo >= tax_params['max']:
+                        if atom_param[0] == '>' and val >= tax_params['max']:
                             raise ValueError(
-                                'Atom [%s]: incorrect float inequality:'
-                                ' no valid values above max value (%f).' %
-                                (atom_anc, float(tax_params['min'])))
+                                'Atom [%s]: incorrect %s inequality,'
+                                ' no valid values above max value (%s).' %
+                                (atom_anc, single_type_name,
+                                 tax_params['max']))
                 else:
                     if param_type_name == 'rangeable_float':
-                        try:
+                        if re.findall("[^-]+-", atom_param):
                             rangefloat_tree = self.rangefloat_grammar.parse(
                                 atom_param)
                             if (rangefloat_tree.expr.name != 'range' or
                                     len(rangefloat_tree.children) != 3):
                                 raise ValueError(
-                                    'Atom [%s]: incorrect float range'
+                                    'Atom [%s]: incorrect floats range'
                                     ' syntax parameter found[%s].' %
                                     (atom_anc, atom_param))
                             flos = [rangefloat_tree.children[0],
@@ -299,23 +308,59 @@ GemTaxonomy Info
                             if (flos[0].expr.name != 'flo' or
                                     flos[1].expr.name != 'flo'):
                                 raise ValueError(
-                                    'Atom [%s]: incorrect float range'
+                                    'Atom [%s]: incorrect floats range'
                                     ' syntax parameter found[%s].' %
                                     (atom_anc, atom_param))
                             for flo_idx in range(0, 2):
                                 self.check_single_value(
                                     atom_anc, 'float',
                                     flos[flo_idx].text, tax_params)
-                        except (ParsimParseError,
-                                ParsimIncompleteParseError) as exc:
+                            # check endpoints order
+                            if float(flos[0].text) >= float(flos[1].text):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect floats range:'
+                                    ' first endpoint is greater then or'
+                                    ' equal to the second (%s)' % (
+                                        atom_anc, atom_param))
+                        else:
                             # precise single value case
                             self.check_single_value(
                                 atom_anc, 'float',
                                 atom_param, tax_params)
                     elif param_type_name == 'rangeable_int':
-                        # TODO FIXME
-                        print('TODO')
-                        raise ValueError('NOT YET IMPLEMENTED')
+                        if re.findall("[^-]+-", atom_param):
+                            rangeint_tree = self.rangeint_grammar.parse(
+                                atom_param)
+                            if (rangeint_tree.expr.name != 'range' or
+                                    len(rangeint_tree.children) != 3):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect integers range'
+                                    ' syntax parameter found[%s].' %
+                                    (atom_anc, atom_param))
+                            ints = [rangeint_tree.children[0],
+                                    rangeint_tree.children[2]]
+                            if (ints[0].expr.name != 'inte' or
+                                    ints[1].expr.name != 'inte'):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect integers range'
+                                    ' syntax parameter found[%s].' %
+                                    (atom_anc, atom_param))
+                            for int_idx in range(0, 2):
+                                self.check_single_value(
+                                    atom_anc, 'int',
+                                    ints[int_idx].text, tax_params)
+                            # check endpoints order
+                            if int(ints[0].text) >= int(ints[1].text):
+                                raise ValueError(
+                                    'Atom [%s]: incorrect integers range:'
+                                    ' first endpoint is greater then or'
+                                    ' equal to the second (%s)' % (
+                                        atom_anc, atom_param))
+                        else:
+                            # precise single value case
+                            self.check_single_value(
+                                atom_anc, 'int',
+                                atom_param, tax_params)
 
         # if (arg_type_name == 'filtered_attribute'
         #         or arg_type_name == 'filtered_atomsgroup'):
