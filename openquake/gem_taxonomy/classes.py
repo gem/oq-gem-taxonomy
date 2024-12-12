@@ -362,23 +362,6 @@ GemTaxonomy Info
                                 atom_anc, 'int',
                                 atom_param, tax_params)
 
-        # if (arg_type_name == 'filtered_attribute'
-        #         or arg_type_name == 'filtered_atomsgroup'):
-        #     args_info = eval('self.args__' + tax_args['type'])
-        # else:
-        #     raise ValueError(
-        #         'Atom [%s]: unknown arguments type [%s].' %
-        #         (atom_anc, tax_args['type']))
-
-        # if arg_type_name == 'filtered_attribute':
-        #     for attr_str in atom_args:
-        #         self.validate_attribute(
-        #             attr_base, attr_str,
-        #             atom_args_orig_in,
-        #             args_info['attribute_name'],
-        #             list(set(filtered_atoms).union(
-        #                 set(args_info['filtered_atoms']))))
-
     def validate_attribute(self, attr_base, attr_tree, attr_scope,
                            attr_name, filtered_atoms):
         """
@@ -388,6 +371,9 @@ GemTaxonomy Info
                         (e.g. if already argument...)
         attr_name:      already specified when call as arguments check
         filtered_atoms: list of prohibited atoms (from arguments check)
+
+        RETURN:
+        attr_name
         """
         attr = attr_tree.text
         atoms_trees = self.extract_atoms(attr_tree)
@@ -549,8 +535,7 @@ GemTaxonomy Info
                         ' for atom [%s], found (%s)' %
                         (attr_base, atom_name, params))
 
-        # FIXME return properly values
-        return 1, 2
+        return attr_name
 
     def validate(self, tax_str):
         attr_name_in = []
@@ -560,7 +545,7 @@ GemTaxonomy Info
         for attr in attrs:
             attr_tree = self.attr_grammar.parse(attr)
 
-            attr_name, attr_out = self.validate_attribute(
+            attr_name = self.validate_attribute(
                 attr, attr_tree, '', '', [])
 
             if attr_name in attr_in:
