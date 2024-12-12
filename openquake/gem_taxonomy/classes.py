@@ -81,12 +81,12 @@ GemTaxonomy Info
 
             # flo = ~r"[0-9]+"
             self.rangefloat_grammar = Grammar(r"""
-                range = flo "-" flo
-                flo = ~r"[0-9-]?" ~r"[0-9.]*" ( ~r"e[+-]?[0-9]+" )?
+                range = float_value "-" float_value
+                float_value = ~r"[0-9-]?" ~r"[0-9.]*" ( ~r"e[+-]?[0-9]+" )?
                 """)
             self.rangeint_grammar = Grammar(r"""
-                range = inte "-" inte
-                inte = ~r"[0-9-]" ~r"[0-9]*"
+                range = integer_value "-" integer_value
+                integer_value = ~r"[0-9-]" ~r"[0-9]*"
                 """)
 
         self.gtd = GemTaxonomyData()
@@ -214,8 +214,8 @@ GemTaxonomy Info
             if (m_incl and v < v_min) or (not m_incl and v <= v_min):
                 # import pdb ; pdb.set_trace()
                 raise ValueError(
-                    ('Atom [%s]: value [%s] less%s then min value ('
-                     + ty_form + ').') %
+                    ('Atom [%s]: value [%s] less%s then min value ['
+                     + ty_form + '].') %
                     (atom_anc, atom_param,
                      (" or equal" if not m_incl else ""),
                      tax_params['min']))
@@ -227,7 +227,7 @@ GemTaxonomy Info
             if (m_incl and v > v_max) or (not m_incl and v >= v_max):
                 raise ValueError(
                     ('Atom [%s]: value [%s] greater%s'
-                     ' then max value (' + ty_form + ').') %
+                     ' then max value [' + ty_form + '].') %
                     (atom_anc, atom_param,
                      (" or equal" if not m_incl else ""),
                      tax_params['max']))
@@ -282,34 +282,43 @@ GemTaxonomy Info
                         if atom_param[0] == '<' and val <= tax_params['min']:
                             raise ValueError(
                                 'Atom [%s]: incorrect %s inequality,'
-                                ' no valid values below min value (%s).' %
+                                ' no valid values below min value [%s].' %
                                 (atom_anc, single_type_name,
                                  tax_params['min']))
                     if 'max' in tax_params:
                         if atom_param[0] == '>' and val >= tax_params['max']:
                             raise ValueError(
                                 'Atom [%s]: incorrect %s inequality,'
-                                ' no valid values above max value (%s).' %
+                                ' no valid values above max value [%s].' %
                                 (atom_anc, single_type_name,
                                  tax_params['max']))
                 else:
                     if param_type_name == 'rangeable_float':
                         if re.findall("[^-]+-", atom_param):
-                            rangefloat_tree = self.rangefloat_grammar.parse(
-                                atom_param)
+                            try:
+                                rangefloat_tree = (
+                                    self.rangefloat_grammar.parse(
+                                        atom_param))
+                            except (ParsimParseError,
+                                    ParsimIncompleteParseError) as exc:
+                                raise ValueError(
+                                    'Atom [%s]: incorrect floats range'
+                                    ' syntax parameter found [%s]: %s.' %
+                                    (atom_anc, atom_param,
+                                     str(exc).rstrip('.')))
                             if (rangefloat_tree.expr.name != 'range' or
                                     len(rangefloat_tree.children) != 3):
                                 raise ValueError(
                                     'Atom [%s]: incorrect floats range'
-                                    ' syntax parameter found[%s].' %
+                                    ' syntax parameter found [%s].' %
                                     (atom_anc, atom_param))
                             flos = [rangefloat_tree.children[0],
                                     rangefloat_tree.children[2]]
-                            if (flos[0].expr.name != 'flo' or
-                                    flos[1].expr.name != 'flo'):
+                            if (flos[0].expr.name != 'float_value' or
+                                    flos[1].expr.name != 'float_value'):
                                 raise ValueError(
                                     'Atom [%s]: incorrect floats range'
-                                    ' syntax parameter found[%s].' %
+                                    ' syntax parameter found [%s].' %
                                     (atom_anc, atom_param))
                             for flo_idx in range(0, 2):
                                 self.check_single_value(
@@ -320,7 +329,7 @@ GemTaxonomy Info
                                 raise ValueError(
                                     'Atom [%s]: incorrect floats range:'
                                     ' first endpoint is greater then or'
-                                    ' equal to the second (%s)' % (
+                                    ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
                         else:
                             # precise single value case
@@ -329,21 +338,29 @@ GemTaxonomy Info
                                 atom_param, tax_params)
                     elif param_type_name == 'rangeable_int':
                         if re.findall("[^-]+-", atom_param):
-                            rangeint_tree = self.rangeint_grammar.parse(
-                                atom_param)
+                            try:
+                                rangeint_tree = self.rangeint_grammar.parse(
+                                    atom_param)
+                            except (ParsimParseError,
+                                    ParsimIncompleteParseError) as exc:
+                                raise ValueError(
+                                    'Atom [%s]: incorrect integers range'
+                                    ' syntax parameter found [%s]: %s.' %
+                                    (atom_anc, atom_param,
+                                     str(exc).rstrip('.')))
                             if (rangeint_tree.expr.name != 'range' or
                                     len(rangeint_tree.children) != 3):
                                 raise ValueError(
                                     'Atom [%s]: incorrect integers range'
-                                    ' syntax parameter found[%s].' %
+                                    ' syntax parameter found [%s].' %
                                     (atom_anc, atom_param))
                             ints = [rangeint_tree.children[0],
                                     rangeint_tree.children[2]]
-                            if (ints[0].expr.name != 'inte' or
-                                    ints[1].expr.name != 'inte'):
+                            if (ints[0].expr.name != 'integer_value' or
+                                    ints[1].expr.name != 'integer_value'):
                                 raise ValueError(
                                     'Atom [%s]: incorrect integers range'
-                                    ' syntax parameter found[%s].' %
+                                    ' syntax parameter found [%s].' %
                                     (atom_anc, atom_param))
                             for int_idx in range(0, 2):
                                 self.check_single_value(
@@ -354,7 +371,7 @@ GemTaxonomy Info
                                 raise ValueError(
                                     'Atom [%s]: incorrect integers range:'
                                     ' first endpoint is greater then or'
-                                    ' equal to the second (%s)' % (
+                                    ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
                         else:
                             # precise single value case
@@ -532,7 +549,7 @@ GemTaxonomy Info
                 if len(params) > 0:
                     raise ValueError(
                         'Attribute [%s]: no parameters expected'
-                        ' for atom [%s], found (%s)' %
+                        ' for atom [%s], found [%s]' %
                         (attr_base, atom_name, params))
 
         return attr_name
@@ -543,7 +560,12 @@ GemTaxonomy Info
 
         attrs = tax_str.split('/')
         for attr in attrs:
-            attr_tree = self.attr_grammar.parse(attr)
+            try:
+                attr_tree = self.attr_grammar.parse(attr)
+            except ParsimParseError as exc:
+                raise ValueError(
+                    'Attribute [%s] parsing error: %s.' %
+                    (attr, str(exc).rstrip('.')))
 
             attr_name = self.validate_attribute(
                 attr, attr_tree, '', '', [])

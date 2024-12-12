@@ -54,6 +54,7 @@ Repository = "https://github.com/gem/oq-gem-taxonomy"
 [project.scripts]
 "gem-taxonomy-info" = "openquake.gem_taxonomy.scripts:info"
 "gem-taxonomy-validate" = "openquake.gem_taxonomy.scripts:validate"
+"gem-taxonomy-csv-validate" = "openquake.gem_taxonomy.scripts:csv_validate"
 
 # [project.gui-scripts]
 # spam-gui = "spam:main_gui"
