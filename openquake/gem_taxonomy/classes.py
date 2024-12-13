@@ -49,7 +49,7 @@ import re
 #   DONE  . are optional? if not check '(' character
 #   DONE - if not arguments check syntax
 #   - parameters check if present (include scope inheritance and visualizz.)
-#   - parameters range validation (a < b)
+#   DONE - parameters range validation (a < b)
 #   DONE - if not parameters check syntax
 #
 
