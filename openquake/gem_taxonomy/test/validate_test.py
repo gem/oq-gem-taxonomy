@@ -143,6 +143,15 @@ taxonomy_strings = [
     ("H:3-6", None),
     ("H:3-0", "Atom [H:3-0]: incorrect integers range: first endpoint"
      " is greater then or equal to the second [3-0]"),
+
+    # check missing atom dependency
+    ("HBAPP:1+HD:0", None),
+    ("S+CIP", "Attribute [S+CIP]: missing dependency for atom [CIP]"),
+    ("M+STRUB+SPSA", None),
+    ("M+SPSA", "Attribute [M+SPSA]: missing dependency for atom [SPSA]"),
+    ("HYB(S;M+SPSA)", "Attribute [HYB(S;M+SPSA)]: missing dependency"
+     " for atom [SPSA]"),
+    ("HYB(S;M+STRUB+SPSA)", None),
 ]
 
 

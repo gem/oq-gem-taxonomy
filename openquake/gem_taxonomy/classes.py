@@ -41,7 +41,7 @@ import re
 #   - atoms order
 #
 # * Atom scope
-#   - missing atom dependencies
+#   DONE - missing atom dependencies
 #   - difference between arguments
 #   DONE - arguments check if present
 #   DONE - arguments as filtered_attributes
@@ -212,7 +212,6 @@ GemTaxonomy Info
             m_incl = (tax_params['min_incl'] if 'min_incl' in tax_params
                       else True)
             if (m_incl and v < v_min) or (not m_incl and v <= v_min):
-                # import pdb ; pdb.set_trace()
                 raise ValueError(
                     ('Atom [%s]: value [%s] less%s then min value ['
                      + ty_form + '].') %
@@ -551,6 +550,18 @@ GemTaxonomy Info
                         'Attribute [%s]: no parameters expected'
                         ' for atom [%s], found [%s]' %
                         (attr_base, atom_name, params))
+
+        for atom_name_in in atom_names_in:
+            if atom_name_in not in self.tax['AtomsDeps']:
+                continue
+            else:
+                for dep in self.tax['AtomsDeps'][atom_name_in]:
+                    if dep in atom_names_in:
+                        break
+                else:
+                    raise ValueError(
+                        'Attribute [%s]: missing dependency for atom [%s]' %
+                        (attr_base, atom_name))
 
         return attr_name
 
