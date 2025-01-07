@@ -76,7 +76,7 @@ GemTaxonomy Info
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
-                atom_params = ":" ~r"[A-Za-z0-9<>-][A-Za-z0-9.+-]*"
+                atom_params = ":" ~r"[A-Za-z0-9<>-][A-Za-z0-9.-]*"
                 """)
 
             # flo = ~r"[0-9]+"
