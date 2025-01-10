@@ -32,16 +32,17 @@ import re
 
 # * Taxonomy scope
 #   DONE - check attr dup
-#   - attributes order
-#   - difference between arguments
+#   DONE - canonical attributes order
+#   DONE - difference between attributes
 #
 # * Attribute scope
 #   DONE - check atom dup
 #   DONE - check mutex atoms for the same group
-#   - atoms order
+#   DONE -  canonical atoms order
 #
 # * Atom scope
 #   DONE - missing atom dependencies
+#   DONE - canonical attribute arguments
 #   - difference between arguments
 #   DONE - arguments check if present
 #   DONE - arguments as filtered_attributes
@@ -132,6 +133,9 @@ GemTaxonomy Info
         tree_args: list of tree arguments
         atom_args_orig_in: flattened hierarchy of current atom
         filtered_atoms: optional list of atoms not allowed as arguments
+
+        RETURN:
+        args_canon if arguments are filtered_attribute
         """
         arg_type_name = tax_args['type'].split('(')[0]
 
@@ -144,18 +148,27 @@ GemTaxonomy Info
                 (atom_anc, tax_args['type']))
 
         if arg_type_name == 'filtered_attribute':
+            args_list_canon = []
             for tree_arg in tree_args:
-                self.validate_attribute(
+                # print('TREE_ARG: %s' % tree_arg.text)
+                attr_name, attr_canon = self.validate_attribute(
                     attr_base, tree_arg,
                     atom_args_orig_in,
                     args_info['attribute_name'],
                     list(set(filtered_atoms).union(
                         set(args_info['filtered_atoms']))))
+                args_list_canon.append(attr_canon)
+                # print("val_args: attr_canon: [%s]" % attr_canon)
+            args_canon = ";".join(args_list_canon)
+            # print("val_args: args_canon: [%s]" % args_canon)
+            return args_canon
         elif arg_type_name == 'filtered_atomsgroup':
+            args_list_canon = []
             # args_info['atomsgroup_name']
             # args_info['filtered_atoms']
             for tree_arg in tree_args:
                 atom_name = tree_arg.children[0].children[0].text
+                args_list_canon.append(tree_arg.text)
                 if atom_name not in self.tax['AtomDict']:
                     raise ValueError(
                         'Attribute [%s]: unknown atom [%s].' % (
@@ -174,6 +187,9 @@ GemTaxonomy Info
                     raise ValueError(
                         'Attribute [%s], forbidden atom found [%s].' % (
                             attr_base, atom_name))
+
+            args_canon = ";".join(args_list_canon)
+            return args_canon
 
     def params_get(self, tax_params, attr):
         if attr not in tax_params:
@@ -394,17 +410,22 @@ GemTaxonomy Info
         attr = attr_tree.text
         atoms_trees = self.extract_atoms(attr_tree)
         atom_names_in = []
-        atoms_in = {}
+        atoms_in = []
+        atoms_canon_in = []
+        atoms_dict_in = {}
 
         for atom_tree in atoms_trees:
             atom = atom_tree.text
+            atoms_in.append(atom)
             if len(atom_tree.children) != 3:
                 raise ValueError(
                     'Attribute [%s], scope [%s]: malformed atom [%s]' % (
                         attr_base, attr_scope, atom))
 
             atom_name = atom_tree.children[0].text
+            args_canon = ""
             tree_args = []
+            len_tree_args = 0
             atom_tree_args = atom_tree.children[1]
             nchs_args = len(atom_tree_args.children)
             if nchs_args > 0:
@@ -436,7 +457,7 @@ GemTaxonomy Info
             if atom_name in filtered_atoms:
                 raise ValueError(
                     'Attribute [%s], scope [%s]: forbidden'
-                    ' atom recusion found [%s].' % (
+                    ' atom recursion found [%s].' % (
                         attr_base, attr_scope, atom_name))
 
             args_attr_scope = (attr_scope + ', ' + 'args ' + atom_name)
@@ -455,7 +476,7 @@ GemTaxonomy Info
             tax_atom = self.tax['AtomDict'][atom_name]
 
             # check mutex atoms for the same group
-            atoms_group_name = {k: v for k, v in atoms_in.items() if
+            atoms_group_name = {k: v for k, v in atoms_dict_in.items() if
                                 v['group'] == tax_atom['group']}
             if atoms_group_name:
                 raise ValueError(
@@ -468,7 +489,7 @@ GemTaxonomy Info
                      atom_name))
 
             atom_names_in.append(atom_name)
-            atoms_in[atom_name] = tax_atom
+            atoms_dict_in[atom_name] = tax_atom
 
             if attr_name == '':
                 # if atom_name in self.tax['AtomsDeps'].keys():
@@ -507,10 +528,11 @@ GemTaxonomy Info
                         (attr_base, atom_name, tax_args['args_max'],
                          's' if tax_args['args_max'] > 1 else '',
                          len_tree_args, atom))
-                self.validate_arguments(
+                args_canon = self.validate_arguments(
                     attr_base,
                     atom, tax_args, tree_args,
                     args_attr_scope, filtered_atoms)
+                # print("val_attr: args_canon: [%s]" % args_canon)
             else:
                 # if not args check if arguments are present
                 if len(tree_args) > 0:
@@ -551,6 +573,26 @@ GemTaxonomy Info
                         ' for atom [%s], found [%s]' %
                         (attr_base, atom_name, params))
 
+            if len_tree_args > 0:
+                if len(params) > 0:
+                    atoms_canon_in.append(
+                        "%s(%s):%s" % (
+                            atom_name, args_canon,
+                            ":".join(params)))
+                else:
+                    atoms_canon_in.append(
+                        "%s(%s)" % (
+                            atom_name, args_canon))
+            else:
+                if len(params) > 0:
+                    atoms_canon_in.append(
+                        "%s:%s" % (
+                            atom_name, ":".join(params)))
+                else:
+                    atoms_canon_in.append("%s" % (
+                        atom_name))
+            # print("val_attr: atoms_canon_in %s" % atoms_canon_in)
+
         for atom_name_in in atom_names_in:
             if atom_name_in not in self.tax['AtomsDeps']:
                 continue
@@ -562,12 +604,18 @@ GemTaxonomy Info
                     raise ValueError(
                         'Attribute [%s]: missing dependency for atom [%s]' %
                         (attr_base, atom_name))
-
-        return attr_name
+        group_progs = [int(self.tax['AtomsGroupDict'][
+            self.tax['AtomDict'][x]['group']]['prog']) for x in atom_names_in]
+        attr_canon = '+'.join(
+            [x for _, x in sorted(zip(group_progs, atoms_canon_in))])
+        # print("val_attr: atoms_canon_in [%s] ret: [%s], [%s]" % (
+        #       atoms_canon_in, attr_name, attr_canon))
+        return attr_name, attr_canon
 
     def validate(self, tax_str):
         attr_name_in = []
         attr_in = {}
+        attr_canon_in = {}
 
         attrs = tax_str.split('/')
         for attr in attrs:
@@ -578,7 +626,7 @@ GemTaxonomy Info
                     'Attribute [%s] parsing error: %s.' %
                     (attr, str(exc).rstrip('.')))
 
-            attr_name = self.validate_attribute(
+            attr_name, attr_canon = self.validate_attribute(
                 attr, attr_tree, '', '', [])
 
             if attr_name in attr_in:
@@ -589,3 +637,16 @@ GemTaxonomy Info
                      attr))
             attr_name_in.append(attr_name)
             attr_in[attr_name] = attr
+            attr_canon_in[attr_name] = attr_canon
+        attr_progs = [int(self.tax['AttributeDict'][x]['prog']) for x
+                      in attr_name_in]
+        attr_name_canon = [x for _, x in sorted(
+            zip(attr_progs, attr_name_in))]
+        tax_canon = "/".join([attr_canon_in[x] for x in
+                              attr_name_canon])
+        if tax_str == tax_canon:
+            return({'is_canonical': True})
+        else:
+            return({'is_canonical': False,
+                    'original': tax_str,
+                    'canonical': tax_canon})

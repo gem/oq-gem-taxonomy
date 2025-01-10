@@ -23,6 +23,8 @@ from parsimonious.exceptions import (IncompleteParseError as
 taxonomy_strings = [
     ("!?", "Attribute [!?] parsing error: Rule 'attr' didn't"
      " match at '!?' (line 1, column 1)."),
+    ("M/S", "Attribute [material] multiple declaration, previous: [M],"
+     " current [S]"),
     ("S+S", "Attribute [S+S]: multiple occurrencies of [S] atom."),
     ("C+LO", "For attribute [C+LO] discordant [atom/argument]->[attribute]"
      " associations: [C]->[material] vs [LO]->[llrs]"),
@@ -42,7 +44,7 @@ taxonomy_strings = [
     ("MDD(C;S;W)", "Attribute [MDD(C;S;W)]: atom [MDD] requires a maximum of"
      " 2 arguments, 3 found [MDD(C;S;W)]."),
     ("MDD(HYB(C;HYB);S)", "Attribute [MDD(HYB(C;HYB);S)], scope [args MDD,"
-     " args HYB]: forbidden atom recusion found [HYB]."),
+     " args HYB]: forbidden atom recursion found [HYB]."),
     ("MDD(HYB(C;LO);S)", "For attribute [LO] discordant [atom/argument]->"
      "[attribute] associations: [args MDD, args HYB]->[material] vs [LO]->"
      "[llrs]"),
@@ -63,7 +65,7 @@ taxonomy_strings = [
     ("MDD(HYB(S;W(X;Y));S)", "Attribute [MDD(HYB(S;W(X;Y));S)]: argument[s]"
      " not expected for atom [W]."),
     ("MDD(MDD(C;LO);S)", "Attribute [MDD(MDD(C;LO);S)], scope [args MDD]:"
-     " forbidden atom recusion found [MDD]."),
+     " forbidden atom recursion found [MDD]."),
     ("MDD(W)", "Attribute [MDD(W)]: atom MDD requires at least 2 arguments,"
      " 1 found [MDD(W)]."),
     ("MDD(W, Z)", "Attribute [MDD(W, Z)] parsing error: Rule 'attr' matched"
@@ -152,6 +154,10 @@ taxonomy_strings = [
     ("HYB(S;M+SPSA)", "Attribute [HYB(S;M+SPSA)]: missing dependency"
      " for atom [SPSA]"),
     ("HYB(S;M+STRUB+SPSA)", None),
+
+    ('DCW:0.4+LFM/MDD(SL+S;HYB(ADO+M;WHE+W))', None,
+     'MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4'),
+    ('MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4', None),
 ]
 
 
@@ -164,14 +170,28 @@ class ValidateTestCase(unittest.TestCase):
         print()
         gt = GemTaxonomy()
         for tax in taxonomy_strings:
-            print('Test: "%s", expected: "%s"' %
-                  to_log(tax))
+            if len(tax) == 2:
+                print('Test: "%s", expected: "%s"' %
+                      to_log(tax))
+            elif len(tax) == 3:
+                print('Test: "%s", expected: "%s", '
+                      'suggested canonical: "%s"' %
+                      (to_log(tax) + (tax[2],)))
+            else:
+                raise ValueError('Test: "%s" not managed' %
+                                 tax)
             try:
-                gt.validate(tax[0])
+                output = gt.validate(tax[0])
                 self.assertEqual(
                     tax[1], None,
                     msg='Expected "%s" but not detected' %
                     (tax[1],))
+                if output['is_canonical'] is False:
+                    self.assertEqual(
+                        output['canonical'], tax[2],
+                        msg=("Expected canonical as "
+                             "'%s' retrieved '%s'" %
+                             (output['canonical'], tax[2])))
             except ValueError as exc:
                 self.assertEqual(
                     str(exc), tax[1],
