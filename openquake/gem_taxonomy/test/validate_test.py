@@ -158,6 +158,11 @@ taxonomy_strings = [
     ('DCW:0.4+LFM/MDD(SL+S;HYB(ADO+M;WHE+W))', None,
      'MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4'),
     ('MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4', None),
+
+    ('LDD(DCW:0.4+LFM;DCW:0.8+LFM)', None, 'LDD(LFM+DCW:0.4;LFM+DCW:0.8)'),
+    ('LDD(DCW:0.4+LFM;LFM+DCW:0.4)', 'Attribute [LDD(DCW:0.4+LFM;LFM+'
+     'DCW:0.4)]: for atom [LDD(DCW:0.4+LFM;LFM+DCW:0.4)] identical'
+     ' arguments are denied [LFM+DCW:0.4].'),
 ]
 
 

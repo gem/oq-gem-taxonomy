@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+import collections
 from parsimonious.grammar import Grammar
 from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
@@ -43,7 +44,7 @@ import re
 # * Atom scope
 #   DONE - missing atom dependencies
 #   DONE - canonical attribute arguments
-#   - difference between arguments
+#   DONE - difference between arguments if attributes
 #   DONE - arguments check if present
 #   DONE - arguments as filtered_attributes
 #   DONE - arguments as filtered_parameters
@@ -159,6 +160,14 @@ GemTaxonomy Info
                         set(args_info['filtered_atoms']))))
                 args_list_canon.append(attr_canon)
                 # print("val_args: attr_canon: [%s]" % attr_canon)
+            if 'must_be_diff' in tax_args and tax_args['must_be_diff']:
+                same_elem = [item for item, count in collections.Counter(
+                    args_list_canon).items() if count > 1]
+                if same_elem:
+                    raise ValueError(
+                        'Attribute [%s]: for atom [%s] identical '
+                        'arguments are denied [%s].' % (
+                            attr_base, atom_anc, same_elem[0]))
             args_canon = ";".join(args_list_canon)
             # print("val_args: args_canon: [%s]" % args_canon)
             return args_canon
