@@ -26,35 +26,6 @@ from .version import __version__
 import json
 import re
 
-#
-# Refact atom name + if there are args + if there are params with single
-# grammar parse
-#
-
-# * Taxonomy scope
-#   DONE - check attr dup
-#   DONE - canonical attributes order
-#   DONE - difference between attributes
-#
-# * Attribute scope
-#   DONE - check atom dup
-#   DONE - check mutex atoms for the same group
-#   DONE -  canonical atoms order
-#
-# * Atom scope
-#   DONE - missing atom dependencies
-#   DONE - canonical attribute arguments
-#   DONE - difference between arguments if attributes
-#   DONE - arguments check if present
-#   DONE - arguments as filtered_attributes
-#   DONE - arguments as filtered_parameters
-#   DONE  . are optional? if not check '(' character
-#   DONE - if not arguments check syntax
-#   - parameters check if present (include scope inheritance and visualizz.)
-#   DONE - parameters range validation (a < b)
-#   DONE - if not parameters check syntax
-#
-
 
 class GemTaxonomy:
     # method to test package infrastructure
@@ -65,8 +36,8 @@ class GemTaxonomy:
 GemTaxonomy Info
 ----------------
 ''')
-        print('  GemTaxonomy package     - v. %s' % __version__)
-        print('  GemTaxonomyData package - v. %s' % GTD_vers)
+        print('  GemTaxonomy Package     - v. %s' % __version__)
+        print('  GemTaxonomyData Package - v. %s' % GTD_vers)
         gtd = GemTaxonomyData()
         tax = gtd.load(taxonomy_version)
         print('  Loaded Taxonomy Data    - v. %s' % taxonomy_version)
