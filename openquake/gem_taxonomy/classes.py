@@ -15,6 +15,9 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+import re
+import sys
+import json
 import collections
 from parsimonious.grammar import Grammar
 from parsimonious.exceptions import ParseError as ParsimParseError
@@ -23,25 +26,33 @@ from parsimonious.exceptions import (IncompleteParseError as
 from openquake.gem_taxonomy_data import GemTaxonomyData
 from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
-import json
-import re
 
 
 class GemTaxonomy:
     # method to test package infrastructure
     @staticmethod
-    def info():
+    def info(stdout=None):
+        if stdout is None:
+            stdout = sys.stdout
         taxonomy_version = '3.3'
         print('''
 GemTaxonomy Info
 ----------------
-''')
-        print('  GemTaxonomy Package     - v. %s' % __version__)
-        print('  GemTaxonomyData Package - v. %s' % GTD_vers)
+''', file=stdout)
+        print('  GemTaxonomy Package     - v. %s' % __version__, file=stdout)
+        print('  GemTaxonomyData Package - v. %s' % GTD_vers, file=stdout)
         gtd = GemTaxonomyData()
         tax = gtd.load(taxonomy_version)
-        print('  Loaded Taxonomy Data    - v. %s' % taxonomy_version)
-        print('  Atoms number            -    %d' % len(tax['Atom']))
+        print('  Loaded Taxonomy Data    - v. %s' % taxonomy_version,
+              file=stdout)
+        print('  Atoms number            -    %d' % len(tax['Atom']),
+              file=stdout)
+        return {
+            "gem_taxonomy_version": __version__,
+            "gem_taxonomy_data_version": GTD_vers,
+            "gem_taxonomy_data_content_version": taxonomy_version,
+            "gem_taxonomy_data_atoms_number": len(tax['Atom'])
+        }
 
     def __init__(self, vers='3.3'):
         if vers == '3.3':
