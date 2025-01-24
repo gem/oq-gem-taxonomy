@@ -28,6 +28,39 @@ from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
 
 
+class LogicAttribute:
+    def __init__(self, attribute, atoms):
+        self.attribute = attribute
+        self.atoms = atoms
+
+    def __repr__(self):
+        return "<attr name=%s>%s" % (
+            self.attribute['name'],
+            '<+>'.join([x.__repr__() for x in self.atoms]))
+
+
+class LogicAtom:
+    def __init__(self, text, atom, args, params, canonical):
+        self.text = text
+        self.atom = atom
+        self.args = args
+        self.params = params
+        self.canonical = canonical
+
+    def __repr__(self):
+        name = self.atom['name']
+        if len(self.args) > 0:
+            args = "<args>(%s)" % '<;>'.join([x.__repr__() for x in self.args])
+        else:
+            args = ""
+
+        if len(self.params) > 0:
+            params = '<params>%s' % '<:>'.join(["%s" % x.__repr__() for x in self.params])
+        else:
+            params = ""
+        return "<atom>%s%s%s" % (name, args, params)
+
+
 class GemTaxonomy:
     # method to test package infrastructure
     @staticmethod
@@ -120,6 +153,7 @@ GemTaxonomy Info
         RETURN:
         args_canon if arguments are filtered_attribute
         """
+        l_args = []
         arg_type_name = tax_args['type'].split('(')[0]
 
         if (arg_type_name == 'filtered_attribute'
@@ -134,13 +168,13 @@ GemTaxonomy Info
             args_list_canon = []
             for tree_arg in tree_args:
                 # print('TREE_ARG: %s' % tree_arg.text)
-                attr_name, attr_canon = self.validate_attribute(
+                attr_name, attr_canon, l_arg = self.validate_attribute(
                     attr_base, tree_arg,
-                    atom_args_orig_in,
-                    args_info['attribute_name'],
+                    atom_args_orig_in, args_info['attribute_name'],
                     list(set(filtered_atoms).union(
                         set(args_info['filtered_atoms']))))
                 args_list_canon.append(attr_canon)
+                l_args.append(l_arg)
                 # print("val_args: attr_canon: [%s]" % attr_canon)
             if 'must_be_diff' in tax_args and tax_args['must_be_diff']:
                 same_elem = [item for item, count in collections.Counter(
@@ -152,13 +186,17 @@ GemTaxonomy Info
                             attr_base, atom_anc, same_elem[0]))
             args_canon = ";".join(args_list_canon)
             # print("val_args: args_canon: [%s]" % args_canon)
-            return args_canon
+            return args_canon, l_args
         elif arg_type_name == 'filtered_atomsgroup':
             args_list_canon = []
             # args_info['atomsgroup_name']
             # args_info['filtered_atoms']
             for tree_arg in tree_args:
                 atom_name = tree_arg.children[0].children[0].text
+                l_arg = LogicAtom(
+                    tree_arg.text, self.tax['AtomDict'][atom_name],
+                    [], [], None)
+
                 args_list_canon.append(tree_arg.text)
                 if atom_name not in self.tax['AtomDict']:
                     raise ValueError(
@@ -178,9 +216,9 @@ GemTaxonomy Info
                     raise ValueError(
                         'Attribute [%s], forbidden atom found [%s].' % (
                             attr_base, atom_name))
-
+                l_args.append(l_arg)
             args_canon = ";".join(args_list_canon)
-            return args_canon
+            return args_canon, l_args
 
     def params_get(self, tax_params, attr):
         if attr not in tax_params:
@@ -393,10 +431,11 @@ GemTaxonomy Info
         attr_scope:     linearized description of current atom scope
                         (e.g. if already argument...)
         attr_name:      already specified when call as arguments check
+        attr_canon:     canonicalized version of string attribute
         filtered_atoms: list of prohibited atoms (from arguments check)
 
         RETURN:
-        attr_name
+        attr_name, l_attr
         """
         attr = attr_tree.text
         atoms_trees = self.extract_atoms(attr_tree)
@@ -404,6 +443,13 @@ GemTaxonomy Info
         atoms_in = []
         atoms_canon_in = []
         atoms_dict_in = {}
+        l_attr = None
+        l_atom = None
+        l_atoms = []
+
+        if attr_name is not None:
+            l_attr = LogicAttribute(
+                self.tax['AttributeDict'][attr_name], [])
 
         for atom_tree in atoms_trees:
             atom = atom_tree.text
@@ -414,6 +460,8 @@ GemTaxonomy Info
                         attr_base, attr_scope, atom))
 
             atom_name = atom_tree.children[0].text
+            l_atom = LogicAtom(atom, self.tax['AtomDict'][atom_name],
+                               [], [], None)
             args_canon = ""
             tree_args = []
             len_tree_args = 0
@@ -482,13 +530,16 @@ GemTaxonomy Info
             atom_names_in.append(atom_name)
             atoms_dict_in[atom_name] = tax_atom
 
-            if attr_name == '':
+            if attr_name is None:
                 # if atom_name in self.tax['AtomsDeps'].keys():
                 #     print('Not independent atom [%s], at'
                 #           ' least unsorted attribute atoms.' % atom_name)
                 attr_name = tax_atom['attr']
                 attr_scope = tax_atom['name']
                 args_attr_scope = 'args ' + atom_name
+                print("create LogicAttribute %s" % attr_name)
+                l_attr = LogicAttribute(
+                    self.tax['AttributeDict'][attr_name], [])
             else:
                 if attr_name != tax_atom['attr']:
                     raise ValueError(
@@ -519,10 +570,11 @@ GemTaxonomy Info
                         (attr_base, atom_name, tax_args['args_max'],
                          's' if tax_args['args_max'] > 1 else '',
                          len_tree_args, atom))
-                args_canon = self.validate_arguments(
+                args_canon, l_args = self.validate_arguments(
                     attr_base,
                     atom, tax_args, tree_args,
                     args_attr_scope, filtered_atoms)
+                l_atom.args = l_args
                 # print("val_attr: args_canon: [%s]" % args_canon)
             else:
                 # if not args check if arguments are present
@@ -583,6 +635,8 @@ GemTaxonomy Info
                     atoms_canon_in.append("%s" % (
                         atom_name))
             # print("val_attr: atoms_canon_in %s" % atoms_canon_in)
+            l_atoms.append(l_atom)
+            # end atoms loop
 
         for atom_name_in in atom_names_in:
             if atom_name_in not in self.tax['AtomsDeps']:
@@ -599,11 +653,15 @@ GemTaxonomy Info
             self.tax['AtomDict'][x]['group']]['prog']) for x in atom_names_in]
         attr_canon = '+'.join(
             [x for _, x in sorted(zip(group_progs, atoms_canon_in))])
+        l_atoms_canon = [x for _, x in sorted(zip(group_progs, l_atoms))]
+        if l_attr is not None:
+            l_attr.atoms = l_atoms_canon
         # print("val_attr: atoms_canon_in [%s] ret: [%s], [%s]" % (
         #       atoms_canon_in, attr_name, attr_canon))
-        return attr_name, attr_canon
+        return attr_name, attr_canon, l_attr
 
     def validate(self, tax_str):
+        l_attrs = []
         attr_name_in = []
         attr_in = {}
         attr_canon_in = {}
@@ -617,9 +675,9 @@ GemTaxonomy Info
                     'Attribute [%s] parsing error: %s.' %
                     (attr, str(exc).rstrip('.')))
 
-            attr_name, attr_canon = self.validate_attribute(
-                attr, attr_tree, '', '', [])
-
+            attr_name, attr_canon, l_attr = self.validate_attribute(
+                attr, attr_tree, '', None, [])
+            l_attrs.append(l_attr)
             if attr_name in attr_in:
                 raise ValueError(
                     'Attribute [%s] multiple declaration,'
@@ -635,6 +693,9 @@ GemTaxonomy Info
             zip(attr_progs, attr_name_in))]
         tax_canon = "/".join([attr_canon_in[x] for x in
                               attr_name_canon])
+        l_attrs_canon = [x for _, x in sorted(
+            zip(attr_progs, l_attrs))]
+        import pdb ; pdb.set_trace()
         if tax_str == tax_canon:
             return({'is_canonical': True})
         else:
