@@ -28,7 +28,7 @@ from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
 
 
-LogicIndentation = 0
+_LogicIndentation = 0
 
 
 def logic_print(attrs):
@@ -41,17 +41,17 @@ class LogicAttribute:
         self.atoms = atoms
 
     def __repr__(self):
-        global LogicIndentation
+        global _LogicIndentation
 
-        indent = LogicIndentation
-        LogicIndentation += 4
-        ret = "\n%s<ATTR name=\"%s\">%s\n%s</ATTR>" % (
+        indent = _LogicIndentation
+        _LogicIndentation += 4
+        ret = "\n%s<ATTR name=\"%s\" id=\"0x%xd\">%s\n%s</ATTR>" % (
             (" " * indent),
-            self.attribute['name'],
+            self.attribute['name'], id(self),
             ''.join([x.__repr__() for x in self.atoms]),
             (" " * indent)
         )
-        LogicIndentation -= 4
+        _LogicIndentation -= 4
         return ret
 
 
@@ -64,16 +64,16 @@ class LogicAtom:
         self.canonical = canonical
 
     def __repr__(self):
-        global LogicIndentation
+        global _LogicIndentation
 
-        indent = LogicIndentation
-        LogicIndentation += 4
+        indent = _LogicIndentation
+        _LogicIndentation += 4
 
         name = self.atom['name']
         if len(self.args) > 0:
-            LogicIndentation += 4
+            _LogicIndentation += 4
             args_list = [x.__repr__() for x in self.args]
-            LogicIndentation -= 4
+            _LogicIndentation -= 4
 
             args = "\n%s<args>%s\n%s</args>" % (
                 " " * (indent + 4), ''.join(
@@ -87,10 +87,10 @@ class LogicAtom:
                 "%s" % x.__repr__() for x in self.params])
         else:
             params = ""
-        ret = "\n%s<ATOM name=\"%s\">%s%s\n%s</ATOM>" % (
-            " " * indent, name, args, params, " " * indent)
+        ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
+            " " * indent, name, id(self), args, params, " " * indent)
 
-        LogicIndentation -= 4
+        _LogicIndentation -= 4
 
         return ret
 
