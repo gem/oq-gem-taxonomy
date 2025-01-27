@@ -584,8 +584,6 @@ GemTaxonomy Info
                         attr_base, attr_scope, atom))
 
             atom_name = atom_tree.children[0].text
-            l_atom = LogicAtom(atom, self.tax['AtomDict'][atom_name],
-                               [], [], None)
             args_canon = ""
             tree_args = []
             len_tree_args = 0
@@ -638,6 +636,9 @@ GemTaxonomy Info
                     'Attribute [%s]: unknown atom [%s].' %
                     (attr_base, atom_name))
             tax_atom = self.tax['AtomDict'][atom_name]
+
+            l_atom = LogicAtom(atom, self.tax['AtomDict'][atom_name],
+                               [], [], None)
 
             # check mutex atoms for the same group
             atoms_group_name = {k: v for k, v in atoms_dict_in.items() if
