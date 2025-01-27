@@ -35,6 +35,57 @@ def logic_print(attrs):
     print("".join([x.__repr__() for x in attrs]))
 
 
+class LogicParam:
+    TYPE_OPTION = 1
+    TYPE_INT = 2
+    TYPE_FLOAT = 3
+
+    SUBTYPE_NONE = 0
+    SUBTYPE_DIS_LT = 1
+    SUBTYPE_DIS_GT = 2
+    SUBTYPE_RANGE = 3
+    SUBTYPE_EXACT = 4
+
+    def __init__(self, type, subtype, value, unit_meas):
+        self.type = type
+        self.subtype = subtype
+        self.value = value
+        self.unit_meas = unit_meas
+
+    def __repr__(self):
+        global _LogicIndentation
+
+        _LogicIndentation += 4
+        indent = _LogicIndentation
+
+        if self.type not in [
+                self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
+            raise ValueError('unknown param type %d' % self.type)
+
+        if self.type == self.TYPE_OPTION:
+            return 'OPTION type not yet implemented'
+
+        # add other if if other types "%f" if self.type == self.TYPE_FLOAT)
+        form = "%d" if self.type == self.TYPE_INT else "%f"
+        if self.subtype == self.SUBTYPE_DIS_LT:
+            ret = "must be less than %s" % (form % self.value)
+        elif self.subtype == self.SUBTYPE_DIS_GT:
+            ret = "must be great than %s" % (form % self.value)
+        elif self.subtype == self.SUBTYPE_RANGE:
+            ret = "must be between %s and %s" % (
+                form % self.value[0], form % self.value[1])
+        elif self.subtype == self.SUBTYPE_EXACT:
+            ret = "must be %s" % (form % self.value)
+        else:
+            raise ValueError('unknown param subtype %d' % self.subtype)
+
+        ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
+
+        _LogicIndentation -= 4
+
+        return ret
+
+
 class LogicAttribute:
     def __init__(self, attribute, atoms):
         self.attribute = attribute
@@ -76,15 +127,18 @@ class LogicAtom:
             _LogicIndentation -= 4
 
             args = "\n%s<args>%s\n%s</args>" % (
-                " " * (indent + 4), ''.join(
-                    args_list),
-                " " * (indent + 4))
+                ' ' * (indent + 4),
+                ''.join(args_list),
+                ' ' * (indent + 4))
         else:
             args = ""
 
         if len(self.params) > 0:
-            params = '<params>%s' % '<:>'.join([
-                "%s" % x.__repr__() for x in self.params])
+            params = '\n%s<params>%s\n%s</params>' % (
+                ' ' * (indent + 4),
+                ''.join(["%s" % x.__repr__() for x in self.params]),
+                ' ' * (indent + 4),
+            )
         else:
             params = ""
         ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
@@ -324,6 +378,8 @@ GemTaxonomy Info
         atom_params: list of parameters (strings)
         atom_params_orig_in: flattened hierarchy of current atom
         """
+
+        l_params = []
         # NOTE: currently not parameter types with args but we can foresee them
         param_type_name = tax_params['type'].split('(')[0]
 
@@ -335,7 +391,6 @@ GemTaxonomy Info
                     'Atom [%s]: parameters options not found.' %
                     (atom_anc,))
             atom_options = self.tax['Param'][atom_name]
-
             for atom_param in atom_params:
                 if (len(list(filter(
                         lambda option: option['name'] == atom_param,
@@ -343,10 +398,18 @@ GemTaxonomy Info
                     raise ValueError(
                         'Atom [%s]: parameters option [%s] not found.' %
                         (atom_anc, atom_param))
+                l_params.append(LogicParam(
+                    LogicParam.TYPE_OPTION, LogicParam.SUBTYPE_NONE,
+                    atom_param, ''))
         elif param_type_name == 'float' or param_type_name == 'int':
             for atom_param in atom_params:
                 self.check_single_value(atom_anc, param_type_name,
                                         atom_param, tax_params)
+                l_params.append(LogicParam(
+                    (LogicParam.TYPE_FLOAT if param_type_name == 'float'
+                     else LogicParam.TYPE_INT),
+                    LogicParam.SUBTYPE_EXACT,
+                    atom_param, 'TO_BE_FIXED'))
         elif (param_type_name == 'rangeable_float' or
               param_type_name == 'rangeable_int'):
             single_type_name = param_type_name[10:]
@@ -370,6 +433,13 @@ GemTaxonomy Info
                                 ' no valid values above max value [%s].' %
                                 (atom_anc, single_type_name,
                                  tax_params['max']))
+                    l_params.append(LogicParam(
+                        (LogicParam.TYPE_FLOAT
+                         if param_type_name == 'rangeable_float'
+                         else LogicParam.TYPE_INT),
+                        (LogicParam.SUBTYPE_DIS_LT if atom_param[0] == '<' else
+                         LogicParam.SUBTYPE_DIS_GT),
+                        atom_param, 'TO_BE_FIXED'))
                 else:
                     if param_type_name == 'rangeable_float':
                         if re.findall("[^-]+-", atom_param):
@@ -409,11 +479,21 @@ GemTaxonomy Info
                                     ' first endpoint is greater then or'
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
+                            l_params.append(LogicParam(
+                                LogicParam.TYPE_FLOAT,
+                                LogicParam.SUBTYPE_RANGE,
+                                [float(flos[0].text), float(flos[1].text)],
+                                'TO_BE_FIXED'))
                         else:
                             # precise single value case
                             self.check_single_value(
                                 atom_anc, 'float',
                                 atom_param, tax_params)
+                            l_params.append(LogicParam(
+                                LogicParam.TYPE_FLOAT,
+                                LogicParam.SUBTYPE_EXACT,
+                                float(atom_param),
+                                'TO_BE_FIXED'))
                     elif param_type_name == 'rangeable_int':
                         if re.findall("[^-]+-", atom_param):
                             try:
@@ -451,11 +531,21 @@ GemTaxonomy Info
                                     ' first endpoint is greater then or'
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
+                            l_params.append(LogicParam(
+                                LogicParam.TYPE_INT,
+                                LogicParam.SUBTYPE_RANGE,
+                                [int(ints[0].text), int(ints[1].text)],
+                                'TO_BE_FIXED'))
                         else:
                             # precise single value case
                             self.check_single_value(
                                 atom_anc, 'int',
                                 atom_param, tax_params)
+                            l_params.append(LogicParam(
+                                LogicParam.TYPE_INT,
+                                LogicParam.SUBTYPE_EXACT,
+                                int(atom_param), 'TO_BE_FIXED'))
+        return l_params
 
     def validate_attribute(self, attr_base, attr_tree, attr_scope,
                            attr_name, filtered_atoms):
@@ -519,6 +609,7 @@ GemTaxonomy Info
 
             # IN tree_args the trees for arguments
             params = []
+            l_params = []
             for param_child in atom_tree.children[2].children:
                 if param_child.expr.name != 'atom_params':
                     raise ValueError(
@@ -639,10 +730,11 @@ GemTaxonomy Info
                          's' if tax_params['params_max'] > 1 else '',
                          len_params, atom))
 
-                self.validate_parameters(
+                l_params = self.validate_parameters(
                     attr_base,
                     atom_tree, tax_params, params,
                     attr_scope)
+                l_atom.params = l_params
             else:
                 if len(params) > 0:
                     raise ValueError(
