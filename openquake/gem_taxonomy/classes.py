@@ -19,6 +19,7 @@ import re
 import sys
 import json
 import collections
+import builtins
 from parsimonious.grammar import Grammar
 from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
@@ -67,15 +68,18 @@ class LogicParam:
 
         # add other if if other types "%f" if self.type == self.TYPE_FLOAT)
         form = "%d" if self.type == self.TYPE_INT else "%f"
+        fcast = getattr(builtins, (
+            "int" if self.type == self.TYPE_INT else "float"))
         if self.subtype == self.SUBTYPE_DIS_LT:
-            ret = "must be less than %s" % (form % self.value)
+            ret = "must be less than %s" % (form % fcast(self.value))
         elif self.subtype == self.SUBTYPE_DIS_GT:
-            ret = "must be great than %s" % (form % self.value)
+            ret = "must be greater than %s" % (form % fcast(self.value))
         elif self.subtype == self.SUBTYPE_RANGE:
             ret = "must be between %s and %s" % (
-                form % self.value[0], form % self.value[1])
+                form % fcast(self.value[0]),
+                form % fcast(self.value[1]))
         elif self.subtype == self.SUBTYPE_EXACT:
-            ret = "must be %s" % (form % self.value)
+            ret = "must be %s" % (form % fcast(self.value))
         else:
             raise ValueError('unknown param subtype %d' % self.subtype)
 
@@ -439,7 +443,7 @@ GemTaxonomy Info
                          else LogicParam.TYPE_INT),
                         (LogicParam.SUBTYPE_DIS_LT if atom_param[0] == '<' else
                          LogicParam.SUBTYPE_DIS_GT),
-                        atom_param, 'TO_BE_FIXED'))
+                        atom_param[1:], 'TO_BE_FIXED'))
                 else:
                     if param_type_name == 'rangeable_float':
                         if re.findall("[^-]+-", atom_param):
@@ -822,7 +826,9 @@ GemTaxonomy Info
                               attr_name_canon])
         l_attrs_canon = [x for _, x in sorted(
             zip(attr_progs, l_attrs))]
-        import pdb ; pdb.set_trace()
+
+        # logic_print(l_attrs_canon)
+        #
         if tax_str == tax_canon:
             return({'is_canonical': True})
         else:
