@@ -32,7 +32,7 @@ LogicIndentation = 0
 
 
 def logic_print(attrs):
-    print("".join([x.reprplus() for x in attrs]))
+    print("".join([x.__repr__() for x in attrs]))
 
 
 class LogicAttribute:
@@ -40,7 +40,7 @@ class LogicAttribute:
         self.attribute = attribute
         self.atoms = atoms
 
-    def reprplus(self):
+    def __repr__(self):
         global LogicIndentation
 
         indent = LogicIndentation
@@ -48,7 +48,7 @@ class LogicAttribute:
         ret = "\n%s<ATTR name=\"%s\">%s\n%s</ATTR>" % (
             (" " * indent),
             self.attribute['name'],
-            ''.join([x.reprplus() for x in self.atoms]),
+            ''.join([x.__repr__() for x in self.atoms]),
             (" " * indent)
         )
         LogicIndentation -= 4
@@ -63,7 +63,7 @@ class LogicAtom:
         self.params = params
         self.canonical = canonical
 
-    def reprplus(self):
+    def __repr__(self):
         global LogicIndentation
 
         indent = LogicIndentation
@@ -72,7 +72,7 @@ class LogicAtom:
         name = self.atom['name']
         if len(self.args) > 0:
             LogicIndentation += 4
-            args_list = [x.reprplus() for x in self.args]
+            args_list = [x.__repr__() for x in self.args]
             LogicIndentation -= 4
 
             args = "\n%s<args>%s\n%s</args>" % (
@@ -84,7 +84,7 @@ class LogicAtom:
 
         if len(self.params) > 0:
             params = '<params>%s' % '<:>'.join([
-                "%s" % x.reprplus() for x in self.params])
+                "%s" % x.__repr__() for x in self.params])
         else:
             params = ""
         ret = "\n%s<ATOM name=\"%s\">%s%s\n%s</ATOM>" % (
