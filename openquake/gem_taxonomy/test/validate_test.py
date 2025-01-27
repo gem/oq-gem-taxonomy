@@ -98,6 +98,12 @@ taxonomy_strings = [
      " forbidden atom found [MIX]."),
     ("MIX(RES;COM;GOV)", None),
 
+    ("LFINF", None),
+    ("LFINF(MUR)", None),
+    ("LFINF()", "Attribute [LFINF()] parsing error: Rule 'attr' matched in its"
+     " entirety, but it didn't consume all the text. The non-matching portion"
+     " of the text begins with '()' (line 1, column 6)."),
+
     ("LFM+DCW:-0.5", "Atom [DCW:-0.5]: value [-0.5] less then min value"
      " [0.000000]."),
     ("LFM+DCW:0.5", None),
