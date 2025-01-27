@@ -28,8 +28,11 @@ from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
 
 
+LogicIndentation = 0
+
+
 def logic_print(attrs):
-    print("".join([x.reprplus(0) for x in attrs]))
+    print("".join([x.reprplus() for x in attrs]))
 
 
 class LogicAttribute:
@@ -37,13 +40,19 @@ class LogicAttribute:
         self.attribute = attribute
         self.atoms = atoms
 
-    def reprplus(self, indent):
-        return "\n%s<ATTR name=\"%s\">%s\n%s</ATTR>" % (
+    def reprplus(self):
+        global LogicIndentation
+
+        indent = LogicIndentation
+        LogicIndentation += 4
+        ret = "\n%s<ATTR name=\"%s\">%s\n%s</ATTR>" % (
             (" " * indent),
             self.attribute['name'],
-            ''.join([x.reprplus(indent + 4) for x in self.atoms]),
+            ''.join([x.reprplus() for x in self.atoms]),
             (" " * indent)
         )
+        LogicIndentation -= 4
+        return ret
 
 
 class LogicAtom:
@@ -54,23 +63,36 @@ class LogicAtom:
         self.params = params
         self.canonical = canonical
 
-    def reprplus(self, indent):
+    def reprplus(self):
+        global LogicIndentation
+
+        indent = LogicIndentation
+        LogicIndentation += 4
+
         name = self.atom['name']
         if len(self.args) > 0:
+            LogicIndentation += 4
+            args_list = [x.reprplus() for x in self.args]
+            LogicIndentation -= 4
+
             args = "\n%s<args>%s\n%s</args>" % (
                 " " * (indent + 4), ''.join(
-                    [x.reprplus(indent + 8) for x in self.args]),
+                    args_list),
                 " " * (indent + 4))
         else:
             args = ""
 
         if len(self.params) > 0:
             params = '<params>%s' % '<:>'.join([
-                "%s" % x.reprplus(indent + 4) for x in self.params])
+                "%s" % x.reprplus() for x in self.params])
         else:
             params = ""
-        return "\n%s<ATOM name=\"%s\">%s%s\n%s</ATOM>" % (
+        ret = "\n%s<ATOM name=\"%s\">%s%s\n%s</ATOM>" % (
             " " * indent, name, args, params, " " * indent)
+
+        LogicIndentation -= 4
+
+        return ret
 
 
 class GemTaxonomy:
