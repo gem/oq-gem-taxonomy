@@ -29,9 +29,6 @@ from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
 
 
-_LogicIndentation = 0
-
-
 class GemTaxonomy:
     # method to test package infrastructure
     @staticmethod
@@ -58,6 +55,7 @@ GemTaxonomy Info
             "gem_taxonomy_data_atoms_number": len(tax['Atom'])
         }
 
+    @staticmethod
     def logic_print(attrs):
         print("".join([x.__repr__() for x in attrs]))
 
@@ -80,10 +78,8 @@ GemTaxonomy Info
             self.unit_meas = unit_meas
 
         def __repr__(self):
-            global _LogicIndentation
-
-            _LogicIndentation += 4
-            indent = _LogicIndentation
+            self.paself.LogicIndentation += 4
+            indent = self.paself.LogicIndentation
 
             if self.type not in [
                     self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
@@ -111,7 +107,7 @@ GemTaxonomy Info
 
             ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
 
-            _LogicIndentation -= 4
+            self.paself.LogicIndentation -= 4
 
             return ret
 
@@ -122,17 +118,15 @@ GemTaxonomy Info
             self.atoms = atoms
 
         def __repr__(self):
-            global _LogicIndentation
-
-            indent = _LogicIndentation
-            _LogicIndentation += 4
+            indent = self.paself.LogicIndentation
+            self.paself.LogicIndentation += 4
             ret = "\n%s<ATTR name=\"%s\" id=\"0x%xd\">%s\n%s</ATTR>" % (
                 (" " * indent),
                 self.attribute['name'], id(self),
                 ''.join([x.__repr__() for x in self.atoms]),
                 (" " * indent)
             )
-            _LogicIndentation -= 4
+            self.paself.LogicIndentation -= 4
             return ret
 
     class LogicAtom:
@@ -145,16 +139,14 @@ GemTaxonomy Info
             self.canonical = canonical
 
         def __repr__(self):
-            global _LogicIndentation
-
-            indent = _LogicIndentation
-            _LogicIndentation += 4
+            indent = self.paself.LogicIndentation
+            self.paself.LogicIndentation += 4
 
             name = self.atom['name']
             if len(self.args) > 0:
-                _LogicIndentation += 4
+                self.paself.LogicIndentation += 4
                 args_list = [x.__repr__() for x in self.args]
-                _LogicIndentation -= 4
+                self.paself.LogicIndentation -= 4
 
                 args = "\n%s<args>%s\n%s</args>" % (
                     ' ' * (indent + 4),
@@ -174,11 +166,13 @@ GemTaxonomy Info
             ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
                 " " * indent, name, id(self), args, params, " " * indent)
 
-            _LogicIndentation -= 4
+            self.paself.LogicIndentation -= 4
 
             return ret
 
     def __init__(self, vers='3.3'):
+        self.LogicIndentation = 0
+
         if vers == '3.3':
             self.attr_grammar = Grammar(r"""
                 attr = atom ( "+" atom )*
@@ -830,7 +824,7 @@ GemTaxonomy Info
         l_attrs_canon = [x for _, x in sorted(
             zip(attr_progs, l_attrs))]
 
-        # logic_print(l_attrs_canon)
+        self.logic_print(l_attrs_canon)
         #
         if tax_str == tax_canon:
             return({'is_canonical': True})
