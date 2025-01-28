@@ -32,127 +32,6 @@ from .version import __version__
 _LogicIndentation = 0
 
 
-def logic_print(attrs):
-    print("".join([x.__repr__() for x in attrs]))
-
-
-class LogicParam:
-    TYPE_OPTION = 1
-    TYPE_INT = 2
-    TYPE_FLOAT = 3
-
-    SUBTYPE_NONE = 0
-    SUBTYPE_DIS_LT = 1
-    SUBTYPE_DIS_GT = 2
-    SUBTYPE_RANGE = 3
-    SUBTYPE_EXACT = 4
-
-    def __init__(self, type, subtype, value, unit_meas):
-        self.type = type
-        self.subtype = subtype
-        self.value = value
-        self.unit_meas = unit_meas
-
-    def __repr__(self):
-        global _LogicIndentation
-
-        _LogicIndentation += 4
-        indent = _LogicIndentation
-
-        if self.type not in [
-                self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
-            raise ValueError('unknown param type %d' % self.type)
-
-        if self.type == self.TYPE_OPTION:
-            return 'OPTION type not yet implemented'
-
-        # add other if if other types "%f" if self.type == self.TYPE_FLOAT)
-        form = "%d" if self.type == self.TYPE_INT else "%f"
-        fcast = getattr(builtins, (
-            "int" if self.type == self.TYPE_INT else "float"))
-        if self.subtype == self.SUBTYPE_DIS_LT:
-            ret = "must be less than %s" % (form % fcast(self.value))
-        elif self.subtype == self.SUBTYPE_DIS_GT:
-            ret = "must be greater than %s" % (form % fcast(self.value))
-        elif self.subtype == self.SUBTYPE_RANGE:
-            ret = "must be between %s and %s" % (
-                form % fcast(self.value[0]),
-                form % fcast(self.value[1]))
-        elif self.subtype == self.SUBTYPE_EXACT:
-            ret = "must be %s" % (form % fcast(self.value))
-        else:
-            raise ValueError('unknown param subtype %d' % self.subtype)
-
-        ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
-
-        _LogicIndentation -= 4
-
-        return ret
-
-
-class LogicAttribute:
-    def __init__(self, attribute, atoms):
-        self.attribute = attribute
-        self.atoms = atoms
-
-    def __repr__(self):
-        global _LogicIndentation
-
-        indent = _LogicIndentation
-        _LogicIndentation += 4
-        ret = "\n%s<ATTR name=\"%s\" id=\"0x%xd\">%s\n%s</ATTR>" % (
-            (" " * indent),
-            self.attribute['name'], id(self),
-            ''.join([x.__repr__() for x in self.atoms]),
-            (" " * indent)
-        )
-        _LogicIndentation -= 4
-        return ret
-
-
-class LogicAtom:
-    def __init__(self, text, atom, args, params, canonical):
-        self.text = text
-        self.atom = atom
-        self.args = args
-        self.params = params
-        self.canonical = canonical
-
-    def __repr__(self):
-        global _LogicIndentation
-
-        indent = _LogicIndentation
-        _LogicIndentation += 4
-
-        name = self.atom['name']
-        if len(self.args) > 0:
-            _LogicIndentation += 4
-            args_list = [x.__repr__() for x in self.args]
-            _LogicIndentation -= 4
-
-            args = "\n%s<args>%s\n%s</args>" % (
-                ' ' * (indent + 4),
-                ''.join(args_list),
-                ' ' * (indent + 4))
-        else:
-            args = ""
-
-        if len(self.params) > 0:
-            params = '\n%s<params>%s\n%s</params>' % (
-                ' ' * (indent + 4),
-                ''.join(["%s" % x.__repr__() for x in self.params]),
-                ' ' * (indent + 4),
-            )
-        else:
-            params = ""
-        ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
-            " " * indent, name, id(self), args, params, " " * indent)
-
-        _LogicIndentation -= 4
-
-        return ret
-
-
 class GemTaxonomy:
     # method to test package infrastructure
     @staticmethod
@@ -178,6 +57,126 @@ GemTaxonomy Info
             "gem_taxonomy_data_content_version": taxonomy_version,
             "gem_taxonomy_data_atoms_number": len(tax['Atom'])
         }
+
+    def logic_print(attrs):
+        print("".join([x.__repr__() for x in attrs]))
+
+    class LogicParam:
+        TYPE_OPTION = 1
+        TYPE_INT = 2
+        TYPE_FLOAT = 3
+
+        SUBTYPE_NONE = 0
+        SUBTYPE_DIS_LT = 1
+        SUBTYPE_DIS_GT = 2
+        SUBTYPE_RANGE = 3
+        SUBTYPE_EXACT = 4
+
+        def __init__(self, paself, type, subtype, value, unit_meas):
+            self.paself = paself
+            self.type = type
+            self.subtype = subtype
+            self.value = value
+            self.unit_meas = unit_meas
+
+        def __repr__(self):
+            global _LogicIndentation
+
+            _LogicIndentation += 4
+            indent = _LogicIndentation
+
+            if self.type not in [
+                    self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
+                raise ValueError('unknown param type %d' % self.type)
+
+            if self.type == self.TYPE_OPTION:
+                return 'OPTION type not yet implemented'
+
+            # add other if if other types "%f" if self.type == self.TYPE_FLOAT)
+            form = "%d" if self.type == self.TYPE_INT else "%f"
+            fcast = getattr(builtins, (
+                "int" if self.type == self.TYPE_INT else "float"))
+            if self.subtype == self.SUBTYPE_DIS_LT:
+                ret = "must be less than %s" % (form % fcast(self.value))
+            elif self.subtype == self.SUBTYPE_DIS_GT:
+                ret = "must be greater than %s" % (form % fcast(self.value))
+            elif self.subtype == self.SUBTYPE_RANGE:
+                ret = "must be between %s and %s" % (
+                    form % fcast(self.value[0]),
+                    form % fcast(self.value[1]))
+            elif self.subtype == self.SUBTYPE_EXACT:
+                ret = "must be %s" % (form % fcast(self.value))
+            else:
+                raise ValueError('unknown param subtype %d' % self.subtype)
+
+            ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
+
+            _LogicIndentation -= 4
+
+            return ret
+
+    class LogicAttribute:
+        def __init__(self, paself, attribute, atoms):
+            self.paself = paself
+            self.attribute = attribute
+            self.atoms = atoms
+
+        def __repr__(self):
+            global _LogicIndentation
+
+            indent = _LogicIndentation
+            _LogicIndentation += 4
+            ret = "\n%s<ATTR name=\"%s\" id=\"0x%xd\">%s\n%s</ATTR>" % (
+                (" " * indent),
+                self.attribute['name'], id(self),
+                ''.join([x.__repr__() for x in self.atoms]),
+                (" " * indent)
+            )
+            _LogicIndentation -= 4
+            return ret
+
+    class LogicAtom:
+        def __init__(self, paself, text, atom, args, params, canonical):
+            self.paself = paself
+            self.text = text
+            self.atom = atom
+            self.args = args
+            self.params = params
+            self.canonical = canonical
+
+        def __repr__(self):
+            global _LogicIndentation
+
+            indent = _LogicIndentation
+            _LogicIndentation += 4
+
+            name = self.atom['name']
+            if len(self.args) > 0:
+                _LogicIndentation += 4
+                args_list = [x.__repr__() for x in self.args]
+                _LogicIndentation -= 4
+
+                args = "\n%s<args>%s\n%s</args>" % (
+                    ' ' * (indent + 4),
+                    ''.join(args_list),
+                    ' ' * (indent + 4))
+            else:
+                args = ""
+
+            if len(self.params) > 0:
+                params = '\n%s<params>%s\n%s</params>' % (
+                    ' ' * (indent + 4),
+                    ''.join(["%s" % x.__repr__() for x in self.params]),
+                    ' ' * (indent + 4),
+                )
+            else:
+                params = ""
+            ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
+                " " * indent, name, id(self), args, params, " " * indent)
+
+            _LogicIndentation -= 4
+
+            return ret
 
     def __init__(self, vers='3.3'):
         if vers == '3.3':
@@ -285,8 +284,8 @@ GemTaxonomy Info
             # args_info['filtered_atoms']
             for tree_arg in tree_args:
                 atom_name = tree_arg.children[0].children[0].text
-                l_arg = LogicAtom(
-                    tree_arg.text, self.tax['AtomDict'][atom_name],
+                l_arg = self.LogicAtom(
+                    self, tree_arg.text, self.tax['AtomDict'][atom_name],
                     [], [], None)
 
                 args_list_canon.append(tree_arg.text)
@@ -402,17 +401,19 @@ GemTaxonomy Info
                     raise ValueError(
                         'Atom [%s]: parameters option [%s] not found.' %
                         (atom_anc, atom_param))
-                l_params.append(LogicParam(
-                    LogicParam.TYPE_OPTION, LogicParam.SUBTYPE_NONE,
+                l_params.append(self.LogicParam(
+                    self, self.LogicParam.TYPE_OPTION,
+                    self.LogicParam.SUBTYPE_NONE,
                     atom_param, ''))
         elif param_type_name == 'float' or param_type_name == 'int':
             for atom_param in atom_params:
                 self.check_single_value(atom_anc, param_type_name,
                                         atom_param, tax_params)
-                l_params.append(LogicParam(
-                    (LogicParam.TYPE_FLOAT if param_type_name == 'float'
-                     else LogicParam.TYPE_INT),
-                    LogicParam.SUBTYPE_EXACT,
+                l_params.append(self.LogicParam(
+                    self, (self.LogicParam.TYPE_FLOAT
+                           if param_type_name == 'float'
+                           else self.LogicParam.TYPE_INT),
+                    self.LogicParam.SUBTYPE_EXACT,
                     atom_param, 'TO_BE_FIXED'))
         elif (param_type_name == 'rangeable_float' or
               param_type_name == 'rangeable_int'):
@@ -437,12 +438,13 @@ GemTaxonomy Info
                                 ' no valid values above max value [%s].' %
                                 (atom_anc, single_type_name,
                                  tax_params['max']))
-                    l_params.append(LogicParam(
-                        (LogicParam.TYPE_FLOAT
-                         if param_type_name == 'rangeable_float'
-                         else LogicParam.TYPE_INT),
-                        (LogicParam.SUBTYPE_DIS_LT if atom_param[0] == '<' else
-                         LogicParam.SUBTYPE_DIS_GT),
+                    l_params.append(self.LogicParam(
+                        self, (self.LogicParam.TYPE_FLOAT
+                               if param_type_name == 'rangeable_float'
+                               else self.LogicParam.TYPE_INT),
+                        (self.LogicParam.SUBTYPE_DIS_LT
+                         if atom_param[0] == '<'
+                         else self.LogicParam.SUBTYPE_DIS_GT),
                         atom_param[1:], 'TO_BE_FIXED'))
                 else:
                     if param_type_name == 'rangeable_float':
@@ -483,9 +485,9 @@ GemTaxonomy Info
                                     ' first endpoint is greater then or'
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
-                            l_params.append(LogicParam(
-                                LogicParam.TYPE_FLOAT,
-                                LogicParam.SUBTYPE_RANGE,
+                            l_params.append(self.LogicParam(
+                                self, self.LogicParam.TYPE_FLOAT,
+                                self.LogicParam.SUBTYPE_RANGE,
                                 [float(flos[0].text), float(flos[1].text)],
                                 'TO_BE_FIXED'))
                         else:
@@ -493,9 +495,9 @@ GemTaxonomy Info
                             self.check_single_value(
                                 atom_anc, 'float',
                                 atom_param, tax_params)
-                            l_params.append(LogicParam(
-                                LogicParam.TYPE_FLOAT,
-                                LogicParam.SUBTYPE_EXACT,
+                            l_params.append(self.LogicParam(
+                                self, self.LogicParam.TYPE_FLOAT,
+                                self.LogicParam.SUBTYPE_EXACT,
                                 float(atom_param),
                                 'TO_BE_FIXED'))
                     elif param_type_name == 'rangeable_int':
@@ -535,9 +537,9 @@ GemTaxonomy Info
                                     ' first endpoint is greater then or'
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
-                            l_params.append(LogicParam(
-                                LogicParam.TYPE_INT,
-                                LogicParam.SUBTYPE_RANGE,
+                            l_params.append(self.LogicParam(
+                                self, self.LogicParam.TYPE_INT,
+                                self.LogicParam.SUBTYPE_RANGE,
                                 [int(ints[0].text), int(ints[1].text)],
                                 'TO_BE_FIXED'))
                         else:
@@ -545,9 +547,9 @@ GemTaxonomy Info
                             self.check_single_value(
                                 atom_anc, 'int',
                                 atom_param, tax_params)
-                            l_params.append(LogicParam(
-                                LogicParam.TYPE_INT,
-                                LogicParam.SUBTYPE_EXACT,
+                            l_params.append(self.LogicParam(
+                                self, self.LogicParam.TYPE_INT,
+                                self.LogicParam.SUBTYPE_EXACT,
                                 int(atom_param), 'TO_BE_FIXED'))
         return l_params
 
@@ -576,8 +578,8 @@ GemTaxonomy Info
         l_atoms = []
 
         if attr_name is not None:
-            l_attr = LogicAttribute(
-                self.tax['AttributeDict'][attr_name], [])
+            l_attr = self.LogicAttribute(
+                self, self.tax['AttributeDict'][attr_name], [])
 
         for atom_tree in atoms_trees:
             atom = atom_tree.text
@@ -641,8 +643,9 @@ GemTaxonomy Info
                     (attr_base, atom_name))
             tax_atom = self.tax['AtomDict'][atom_name]
 
-            l_atom = LogicAtom(atom, self.tax['AtomDict'][atom_name],
-                               [], [], None)
+            l_atom = self.LogicAtom(
+                self, atom, self.tax['AtomDict'][atom_name],
+                [], [], None)
 
             # check mutex atoms for the same group
             atoms_group_name = {k: v for k, v in atoms_dict_in.items() if
@@ -668,8 +671,8 @@ GemTaxonomy Info
                 attr_scope = tax_atom['name']
                 args_attr_scope = 'args ' + atom_name
                 print("create LogicAttribute %s" % attr_name)
-                l_attr = LogicAttribute(
-                    self.tax['AttributeDict'][attr_name], [])
+                l_attr = self.LogicAttribute(
+                    self, self.tax['AttributeDict'][attr_name], [])
             else:
                 if attr_name != tax_atom['attr']:
                     raise ValueError(
