@@ -30,6 +30,17 @@ from .version import __version__
 
 
 class GemTaxonomy:
+    class EXPL_OUT_TYPE:
+        SINGLELINE = 1
+        MULTILINE = 2
+        # HTML = 3
+
+        DICT = {
+            'textsingleline': SINGLELINE,
+            'textmultiline': MULTILINE,
+            # 'html': HTML,
+        }
+
     # method to test package infrastructure
     @staticmethod
     def info(stdout=None):
@@ -55,67 +66,51 @@ GemTaxonomy Info
             "gem_taxonomy_data_atoms_number": len(tax['Atom'])
         }
 
-    @staticmethod
-    def logic_print(attrs):
+    def logic_print(self, attrs):
+        self.LogicIndSet(0)
         print("".join([x.__repr__() for x in attrs]))
 
-    class LogicParam:
-        TYPE_OPTION = 1
-        TYPE_INT = 2
-        TYPE_FLOAT = 3
+    def logic_explain(self, attrs, output_type_in=None):
+        '''
+            output_type should be:
+                'textsingleline' - all the explanation in a single
+                                   plain text line (default)
+                'textmultiline'  - the explanation is splitted on
+                                   many lines and indented to improve
+                                   understandability
+                (TODO 'html')    - hyperlinked version of the
+                                   explanation
+        '''
+        output_type = self.EXPL_OUT_TYPE.DICT[
+            'textsingleline' if output_type_in is None else output_type_in]
+        self.LogicIndSet(0)
+        s = ""
+        for attr in attrs:
+            s += attr.explain(output_type=output_type)
 
-        SUBTYPE_NONE = 0
-        SUBTYPE_DIS_LT = 1
-        SUBTYPE_DIS_GT = 2
-        SUBTYPE_RANGE = 3
-        SUBTYPE_EXACT = 4
-
-        def __init__(self, paself, type, subtype, value, unit_meas):
-            self.paself = paself
-            self.type = type
-            self.subtype = subtype
-            self.value = value
-            self.unit_meas = unit_meas
-
-        def __repr__(self):
-            self.paself.LogicIndentation += 4
-            indent = self.paself.LogicIndentation
-
-            if self.type not in [
-                    self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
-                raise ValueError('unknown param type %d' % self.type)
-
-            if self.type == self.TYPE_OPTION:
-                return 'OPTION type not yet implemented'
-
-            # add other if if other types "%f" if self.type == self.TYPE_FLOAT)
-            form = "%d" if self.type == self.TYPE_INT else "%f"
-            fcast = getattr(builtins, (
-                "int" if self.type == self.TYPE_INT else "float"))
-            if self.subtype == self.SUBTYPE_DIS_LT:
-                ret = "must be less than %s" % (form % fcast(self.value))
-            elif self.subtype == self.SUBTYPE_DIS_GT:
-                ret = "must be greater than %s" % (form % fcast(self.value))
-            elif self.subtype == self.SUBTYPE_RANGE:
-                ret = "must be between %s and %s" % (
-                    form % fcast(self.value[0]),
-                    form % fcast(self.value[1]))
-            elif self.subtype == self.SUBTYPE_EXACT:
-                ret = "must be %s" % (form % fcast(self.value))
-            else:
-                raise ValueError('unknown param subtype %d' % self.subtype)
-
-            ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
-
-            self.paself.LogicIndentation -= 4
-
-            return ret
+        return s
 
     class LogicAttribute:
         def __init__(self, paself, attribute, atoms):
             self.paself = paself
             self.attribute = attribute
             self.atoms = atoms
+
+        def explain(self, is_arg=False, output_type=None):
+            if output_type is None:
+                output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
+            s = ""
+            if not is_arg:
+                s += '%s: ' % self.attribute['title']
+            s += ", ".join([atom.explain(output_type=output_type) for atom in self.atoms])
+
+            if not is_arg:
+                s += "."
+                if output_type == GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE:
+                    s += ' '
+                elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                    s += "\n"
+            return s
 
         def __repr__(self):
             indent = self.paself.LogicIndentation
@@ -137,6 +132,58 @@ GemTaxonomy Info
             self.args = args
             self.params = params
             self.canonical = canonical
+
+        def explain(self, is_arg=False, output_type=None):
+            if output_type is None:
+                output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
+
+            if ', ' in self.atom['title']:
+                title = self.atom['title'].replace(', ', ' (') + ')'
+            else:
+                title = self.atom['title']
+
+            # if is_arg is False:
+            #     s = title.lower()
+            # else:
+            #     s = title
+            s = title
+
+            if self.args:
+                s += ' ('
+                if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                    s += '\n'
+                    indent = self.paself.LogicIndInc(4)
+
+                n_args = len(self.args)
+                for idx, arg in enumerate(self.args):
+                    if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                        s += " " * indent
+                    s += arg.explain(is_arg=True, output_type=output_type)
+                    # if idx < (n_args - 2):
+                    if idx < (n_args - 1):
+                        if (output_type ==
+                            GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
+                            s += '; '
+                        elif (output_type ==
+                              GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
+                            s += ';\n'
+                    # elif idx < (n_args - 1):
+                    #     if (output_type ==
+                    #         GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
+                    #         s += " and "
+                    #     elif (output_type ==
+                    #           GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
+                    #         s += " and\n"
+                if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                    s += '\n'
+                    s += " " * indent
+                s += ')'
+            if self.params:
+                s += ': '
+                s += ' '.join([param.explain(output_type=output_type) for
+                               param in self.params])
+
+            return s
 
         def __repr__(self):
             indent = self.paself.LogicIndentation
@@ -170,6 +217,100 @@ GemTaxonomy Info
 
             return ret
 
+    class LogicParam:
+        TYPE_OPTION = 1
+        TYPE_INT = 2
+        TYPE_FLOAT = 3
+
+        SUBTYPE_NONE = 0
+        SUBTYPE_DIS_LT = 1
+        SUBTYPE_DIS_GT = 2
+        SUBTYPE_RANGE = 3
+        SUBTYPE_EXACT = 4
+
+        def __init__(self, paself, type, subtype, value, unit_meas):
+            self.paself = paself
+            self.type = type
+            self.subtype = subtype
+            self.value = value
+            self.unit_meas = unit_meas
+
+        def explain(self, output_type=None):
+            if output_type is None:
+                output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
+            if self.type not in [
+                    self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
+                raise ValueError('unknown param type %d' % self.type)
+
+            if self.type == self.TYPE_OPTION:
+                # atom = self.paself.tax['AtomDict'][self.value[0]]
+                param = [
+                    x for x in self.paself.tax['Param'][self.value[0]]
+                    if x['name'] == self.value[1]][0]
+                return param['title']
+            else:
+                # add other if if other types "%f" if
+                # self.type == self.TYPE_FLOAT)
+                form = "%d" if self.type == self.TYPE_INT else "%f"
+                fcast = getattr(builtins, (
+                    "int" if self.type == self.TYPE_INT else "float"))
+                if self.subtype == self.SUBTYPE_DIS_LT:
+                    ret = "less than %s" % (form % fcast(self.value))
+                elif self.subtype == self.SUBTYPE_DIS_GT:
+                    ret = "greater than %s" % (
+                        form % fcast(self.value))
+                elif self.subtype == self.SUBTYPE_RANGE:
+                    ret = "between %s and %s" % (
+                        form % fcast(self.value[0]),
+                        form % fcast(self.value[1]))
+                elif self.subtype == self.SUBTYPE_EXACT:
+                    ret = "%s" % (form % fcast(self.value))
+                else:
+                    raise ValueError('unknown param subtype %d' % self.subtype)
+
+            return ret
+
+        def __repr__(self):
+            self.paself.LogicIndentation += 4
+            indent = self.paself.LogicIndentation
+
+            if self.type not in [
+                    self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
+                raise ValueError('unknown param type %d' % self.type)
+
+            if self.type == self.TYPE_OPTION:
+                # atom = self.paself.tax['AtomDict'][self.value[0]]
+                # param = [
+                #     x for x in self.paself.tax['Param'][self.value[0]]
+                #     if x['name'] == self.value[1]][0]
+                # return "%s: %s" % (atom['title'], param['title'])
+                ret = self.value[1]
+            else:
+                # add other if if other types "%f" if
+                # self.type == self.TYPE_FLOAT)
+                form = "%d" if self.type == self.TYPE_INT else "%f"
+                fcast = getattr(builtins, (
+                    "int" if self.type == self.TYPE_INT else "float"))
+                if self.subtype == self.SUBTYPE_DIS_LT:
+                    ret = "must be less than %s" % (form % fcast(self.value))
+                elif self.subtype == self.SUBTYPE_DIS_GT:
+                    ret = "must be greater than %s" % (
+                        form % fcast(self.value))
+                elif self.subtype == self.SUBTYPE_RANGE:
+                    ret = "must be between %s and %s" % (
+                        form % fcast(self.value[0]),
+                        form % fcast(self.value[1]))
+                elif self.subtype == self.SUBTYPE_EXACT:
+                    ret = "must be %s" % (form % fcast(self.value))
+                else:
+                    raise ValueError('unknown param subtype %d' % self.subtype)
+
+            ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
+
+            self.paself.LogicIndentation -= 4
+
+            return ret
+
     def __init__(self, vers='3.3'):
         self.LogicIndentation = 0
 
@@ -198,6 +339,16 @@ GemTaxonomy Info
         #     if 'name' in self.tax[k][0]:
         #         new_dict[k + 'Dict'] = {x['name']: x for x in self.tax[k]}
         # self.tax.update(new_dict)
+
+    def LogicIndSet(self, value):
+        self.LogicIndentation = value
+
+    def LogicIndGet(self):
+        return self.LogicIndentation
+
+    def LogicIndInc(self, delta):
+        self.LogicIndentation += delta
+        return self.LogicIndentation
 
     def extract_atoms(self, attr_tree):
         atoms_trees = []
@@ -398,7 +549,7 @@ GemTaxonomy Info
                 l_params.append(self.LogicParam(
                     self, self.LogicParam.TYPE_OPTION,
                     self.LogicParam.SUBTYPE_NONE,
-                    atom_param, ''))
+                    [atom_name, atom_param], ''))
         elif param_type_name == 'float' or param_type_name == 'int':
             for atom_param in atom_params:
                 self.check_single_value(atom_anc, param_type_name,
@@ -664,7 +815,6 @@ GemTaxonomy Info
                 attr_name = tax_atom['attr']
                 attr_scope = tax_atom['name']
                 args_attr_scope = 'args ' + atom_name
-                print("create LogicAttribute %s" % attr_name)
                 l_attr = self.LogicAttribute(
                     self, self.tax['AttributeDict'][attr_name], [])
             else:
@@ -824,7 +974,11 @@ GemTaxonomy Info
         l_attrs_canon = [x for _, x in sorted(
             zip(attr_progs, l_attrs))]
 
-        self.logic_print(l_attrs_canon)
+        # self.logic_print(l_attrs_canon)
+        print(self.logic_explain(l_attrs_canon, 'textsingleline'))
+        print("-----")
+        print(self.logic_explain(l_attrs_canon, 'textmultiline'))
+
         #
         if tax_str == tax_canon:
             return({'is_canonical': True})
