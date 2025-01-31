@@ -102,7 +102,17 @@ GemTaxonomy Info
             s = ""
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
-            s += ", ".join([atom.explain(output_type=output_type) for atom in self.atoms])
+                if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                    s += "\n"
+                    self.paself.LogicIndInc(4)
+
+            if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                j_str = ',\n'
+            else:
+                j_str = ', '
+
+            s += j_str.join([atom.explain(output_type=output_type) for
+                            atom in self.atoms])
 
             if not is_arg:
                 s += "."
@@ -110,6 +120,10 @@ GemTaxonomy Info
                     s += ' '
                 elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
                     s += "\n"
+
+            if not is_arg:
+                if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                    self.paself.LogicIndDec(4)
             return s
 
         def __repr__(self):
@@ -137,6 +151,12 @@ GemTaxonomy Info
             if output_type is None:
                 output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
 
+            s = ""
+
+            if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                indent = self.paself.LogicIndGet()
+                s += ' ' * indent
+
             if ', ' in self.atom['title']:
                 title = self.atom['title'].replace(', ', ' (') + ')'
             else:
@@ -146,7 +166,7 @@ GemTaxonomy Info
             #     s = title.lower()
             # else:
             #     s = title
-            s = title
+            s += title
 
             if self.args:
                 s += ' ('
@@ -156,8 +176,6 @@ GemTaxonomy Info
 
                 n_args = len(self.args)
                 for idx, arg in enumerate(self.args):
-                    if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                        s += " " * indent
                     s += arg.explain(is_arg=True, output_type=output_type)
                     # if idx < (n_args - 2):
                     if idx < (n_args - 1):
@@ -176,6 +194,7 @@ GemTaxonomy Info
                     #         s += " and\n"
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
                     s += '\n'
+                    indent = self.paself.LogicIndDec(4)
                     s += " " * indent
                 s += ')'
             if self.params:
@@ -351,6 +370,10 @@ GemTaxonomy Info
 
     def LogicIndInc(self, delta):
         self.LogicIndentation += delta
+        return self.LogicIndentation
+
+    def LogicIndDec(self, delta):
+        self.LogicIndentation -= delta
         return self.LogicIndentation
 
     def extract_atoms(self, attr_tree):
