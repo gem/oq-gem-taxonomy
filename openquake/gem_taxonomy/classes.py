@@ -111,8 +111,15 @@ GemTaxonomy Info
             else:
                 j_str = ', '
 
-            s += j_str.join([atom.explain(output_type=output_type) for
-                            atom in self.atoms])
+            for idx, atom in enumerate(self.atoms):
+                if idx == 0:
+                    s += atom.explain(output_type=output_type)
+                    if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                        self.paself.LogicIndInc(4)
+                else:
+                    s += j_str + atom.explain(output_type=output_type)
+            if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
+                self.paself.LogicIndDec(4)
 
             if not is_arg:
                 s += "."
