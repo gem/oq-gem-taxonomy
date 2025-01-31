@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+import os
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
 from parsimonious.exceptions import ParseError as ParsimParseError
@@ -178,9 +179,13 @@ def to_log(s_exp):
 
 class ValidateTestCase(unittest.TestCase):
     def test(self):
+        only_success = (os.getenv('ONLY_SUCCESS', 'False') == 'True')
         print()
         gt = GemTaxonomy()
         for tax in taxonomy_strings:
+            if only_success and tax[1] is not None:
+                continue
+
             if len(tax) == 2:
                 print('Test: "%s", expected: "%s"' %
                       to_log(tax))

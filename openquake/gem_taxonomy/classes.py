@@ -162,7 +162,7 @@ GemTaxonomy Info
                     # if idx < (n_args - 2):
                     if idx < (n_args - 1):
                         if (output_type ==
-                            GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
+                                GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
                             s += '; '
                         elif (output_type ==
                               GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
@@ -251,20 +251,23 @@ GemTaxonomy Info
             else:
                 # add other if if other types "%f" if
                 # self.type == self.TYPE_FLOAT)
-                form = "%d" if self.type == self.TYPE_INT else "%f"
+                form = "%d" if self.type == self.TYPE_INT else "%s"
                 fcast = getattr(builtins, (
                     "int" if self.type == self.TYPE_INT else "float"))
                 if self.subtype == self.SUBTYPE_DIS_LT:
-                    ret = "less than %s" % (form % fcast(self.value))
+                    ret = "less than %s %s" % (form % fcast(self.value),
+                                               self.unit_meas[1])
                 elif self.subtype == self.SUBTYPE_DIS_GT:
-                    ret = "greater than %s" % (
-                        form % fcast(self.value))
+                    ret = "greater than %s %s" % (
+                        form % fcast(self.value), self.unit_meas[1])
                 elif self.subtype == self.SUBTYPE_RANGE:
-                    ret = "between %s and %s" % (
+                    ret = "between %s and %s %s" % (
                         form % fcast(self.value[0]),
-                        form % fcast(self.value[1]))
+                        form % fcast(self.value[1]),
+                        self.unit_meas[1])
                 elif self.subtype == self.SUBTYPE_EXACT:
-                    ret = "%s" % (form % fcast(self.value))
+                    ret = "%s %s" % (form % fcast(self.value),
+                                     self.unit_meas[1])
                 else:
                     raise ValueError('unknown param subtype %d' % self.subtype)
 
@@ -559,7 +562,7 @@ GemTaxonomy Info
                            if param_type_name == 'float'
                            else self.LogicParam.TYPE_INT),
                     self.LogicParam.SUBTYPE_EXACT,
-                    atom_param, 'TO_BE_FIXED'))
+                    atom_param, tax_params['unit_measure']))
         elif (param_type_name == 'rangeable_float' or
               param_type_name == 'rangeable_int'):
             single_type_name = param_type_name[10:]
@@ -590,7 +593,7 @@ GemTaxonomy Info
                         (self.LogicParam.SUBTYPE_DIS_LT
                          if atom_param[0] == '<'
                          else self.LogicParam.SUBTYPE_DIS_GT),
-                        atom_param[1:], 'TO_BE_FIXED'))
+                        atom_param[1:], tax_params['unit_measure']))
                 else:
                     if param_type_name == 'rangeable_float':
                         if re.findall("[^-]+-", atom_param):
@@ -634,7 +637,7 @@ GemTaxonomy Info
                                 self, self.LogicParam.TYPE_FLOAT,
                                 self.LogicParam.SUBTYPE_RANGE,
                                 [float(flos[0].text), float(flos[1].text)],
-                                'TO_BE_FIXED'))
+                                tax_params['unit_measure']))
                         else:
                             # precise single value case
                             self.check_single_value(
@@ -644,7 +647,7 @@ GemTaxonomy Info
                                 self, self.LogicParam.TYPE_FLOAT,
                                 self.LogicParam.SUBTYPE_EXACT,
                                 float(atom_param),
-                                'TO_BE_FIXED'))
+                                tax_params['unit_measure']))
                     elif param_type_name == 'rangeable_int':
                         if re.findall("[^-]+-", atom_param):
                             try:
@@ -686,7 +689,7 @@ GemTaxonomy Info
                                 self, self.LogicParam.TYPE_INT,
                                 self.LogicParam.SUBTYPE_RANGE,
                                 [int(ints[0].text), int(ints[1].text)],
-                                'TO_BE_FIXED'))
+                                tax_params['unit_measure']))
                         else:
                             # precise single value case
                             self.check_single_value(
@@ -695,7 +698,7 @@ GemTaxonomy Info
                             l_params.append(self.LogicParam(
                                 self, self.LogicParam.TYPE_INT,
                                 self.LogicParam.SUBTYPE_EXACT,
-                                int(atom_param), 'TO_BE_FIXED'))
+                                int(atom_param), tax_params['unit_measure']))
         return l_params
 
     def validate_attribute(self, attr_base, attr_tree, attr_scope,
