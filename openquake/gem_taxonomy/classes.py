@@ -136,9 +136,9 @@ GemTaxonomy Info
         def __repr__(self):
             indent = self.paself.LogicIndentation
             self.paself.LogicIndentation += 4
-            ret = "\n%s<ATTR name=\"%s\" id=\"0x%xd\">%s\n%s</ATTR>" % (
+            ret = "%s<ATTR id=\"0x%xd\" name=\"%s\">\n%s%s</ATTR>\n" % (
                 (" " * indent),
-                self.attribute['name'], id(self),
+                id(self), self.attribute['name'],
                 ''.join([x.__repr__() for x in self.atoms]),
                 (" " * indent)
             )
@@ -221,7 +221,7 @@ GemTaxonomy Info
                 args_list = [x.__repr__() for x in self.args]
                 self.paself.LogicIndentation -= 4
 
-                args = "\n%s<args>%s\n%s</args>" % (
+                args = "\n%s<args>\n%s%s</args>" % (
                     ' ' * (indent + 4),
                     ''.join(args_list),
                     ' ' * (indent + 4))
@@ -236,8 +236,8 @@ GemTaxonomy Info
                 )
             else:
                 params = ""
-            ret = "\n%s<ATOM name=\"%s\" id=\"0x%xd\">%s%s\n%s</ATOM>" % (
-                " " * indent, name, id(self), args, params, " " * indent)
+            ret = "%s<ATOM id=\"0x%xd\" name=\"%s\">%s%s\n%s</ATOM>\n" % (
+                " " * indent, id(self), name, args, params, " " * indent)
 
             self.paself.LogicIndentation -= 4
 
@@ -254,12 +254,29 @@ GemTaxonomy Info
         SUBTYPE_RANGE = 3
         SUBTYPE_EXACT = 4
 
+        UNIT_MEAS_SINGLE = 0
+        UNIT_MEAS_PLURAL = 1
+
         def __init__(self, paself, type, subtype, value, unit_meas):
             self.paself = paself
             self.type = type
             self.subtype = subtype
             self.value = value
             self.unit_meas = unit_meas
+            self.unit_meas_is_single = None
+
+        def unit_meas_is_single_default(self, value_out):
+            if value_out == '1':
+                return True
+            else:
+                return False
+
+        def unit_meas_out(self, value_out):
+            is_single = (self.unit_meas_is_single(value_out)
+                         if self.unit_meas_is_single is not None else
+                         self.unit_meas_is_single_default(value_out))
+            return (self.unit_meas[self.UNIT_MEAS_SINGLE if is_single else
+                                   self.UNIT_MEAS_PLURAL])
 
         def explain(self, output_type=None):
             if output_type is None:
@@ -278,22 +295,26 @@ GemTaxonomy Info
                 # add other if if other types "%f" if
                 # self.type == self.TYPE_FLOAT)
                 form = "%d" if self.type == self.TYPE_INT else "%s"
-                fcast = getattr(builtins, (
+                fconv = getattr(builtins, (
                     "int" if self.type == self.TYPE_INT else "float"))
                 if self.subtype == self.SUBTYPE_DIS_LT:
-                    ret = "less than %s %s" % (form % fcast(self.value),
-                                               self.unit_meas[1])
+                    value_out = form % fconv(self.value)
+                    unit_meas_out = self.unit_meas_out(value_out)
+                    ret = "less than %s %s" % (value_out, unit_meas_out)
                 elif self.subtype == self.SUBTYPE_DIS_GT:
-                    ret = "greater than %s %s" % (
-                        form % fcast(self.value), self.unit_meas[1])
+                    value_out = form % fconv(self.value)
+                    unit_meas_out = self.unit_meas_out(value_out)
+                    ret = "greater than %s %s" % (value_out, unit_meas_out)
                 elif self.subtype == self.SUBTYPE_RANGE:
+                    unit_meas_out = self.unit_meas[self.UNIT_MEAS_PLURAL]
                     ret = "between %s and %s %s" % (
-                        form % fcast(self.value[0]),
-                        form % fcast(self.value[1]),
-                        self.unit_meas[1])
+                        form % fconv(self.value[0]),
+                        form % fconv(self.value[1]),
+                        unit_meas_out)
                 elif self.subtype == self.SUBTYPE_EXACT:
-                    ret = "%s %s" % (form % fcast(self.value),
-                                     self.unit_meas[1])
+                    value_out = form % fconv(self.value)
+                    unit_meas_out = self.unit_meas_out(value_out)
+                    ret = "%s %s" % (value_out, unit_meas_out)
                 else:
                     raise ValueError('unknown param subtype %d' % self.subtype)
 
@@ -302,40 +323,8 @@ GemTaxonomy Info
         def __repr__(self):
             self.paself.LogicIndentation += 4
             indent = self.paself.LogicIndentation
-
-            if self.type not in [
-                    self.TYPE_OPTION, self.TYPE_INT, self.TYPE_FLOAT]:
-                raise ValueError('unknown param type %d' % self.type)
-
-            if self.type == self.TYPE_OPTION:
-                # atom = self.paself.tax['AtomDict'][self.value[0]]
-                # param = [
-                #     x for x in self.paself.tax['Param'][self.value[0]]
-                #     if x['name'] == self.value[1]][0]
-                # return "%s: %s" % (atom['title'], param['title'])
-                ret = self.value[1]
-            else:
-                # add other if if other types "%f" if
-                # self.type == self.TYPE_FLOAT)
-                form = "%d" if self.type == self.TYPE_INT else "%f"
-                fcast = getattr(builtins, (
-                    "int" if self.type == self.TYPE_INT else "float"))
-                if self.subtype == self.SUBTYPE_DIS_LT:
-                    ret = "must be less than %s" % (form % fcast(self.value))
-                elif self.subtype == self.SUBTYPE_DIS_GT:
-                    ret = "must be greater than %s" % (
-                        form % fcast(self.value))
-                elif self.subtype == self.SUBTYPE_RANGE:
-                    ret = "must be between %s and %s" % (
-                        form % fcast(self.value[0]),
-                        form % fcast(self.value[1]))
-                elif self.subtype == self.SUBTYPE_EXACT:
-                    ret = "must be %s" % (form % fcast(self.value))
-                else:
-                    raise ValueError('unknown param subtype %d' % self.subtype)
-
+            ret = self.explain()
             ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
-
             self.paself.LogicIndentation -= 4
 
             return ret
@@ -967,8 +956,6 @@ GemTaxonomy Info
         l_atoms_canon = [x for _, x in sorted(zip(group_progs, l_atoms))]
         if l_attr is not None:
             l_attr.atoms = l_atoms_canon
-        # print("val_attr: atoms_canon_in [%s] ret: [%s], [%s]" % (
-        #       atoms_canon_in, attr_name, attr_canon))
         return attr_name, attr_canon, l_attr
 
     def validate(self, tax_str):
@@ -1008,14 +995,14 @@ GemTaxonomy Info
             zip(attr_progs, l_attrs))]
 
         # self.logic_print(l_attrs_canon)
-        print(self.logic_explain(l_attrs_canon, 'textsingleline'))
-        print("-----")
-        print(self.logic_explain(l_attrs_canon, 'textmultiline'))
+        # print(self.logic_explain(l_attrs_canon, 'textsingleline'))
+        # print("-----")
+        # print(self.logic_explain(l_attrs_canon, 'textmultiline'))
 
         #
         if tax_str == tax_canon:
-            return({'is_canonical': True})
+            return(l_attrs_canon, {'is_canonical': True})
         else:
-            return({'is_canonical': False,
-                    'original': tax_str,
-                    'canonical': tax_canon})
+            return(l_attrs_canon, {'is_canonical': False,
+                                   'original': tax_str,
+                                   'canonical': tax_canon})
