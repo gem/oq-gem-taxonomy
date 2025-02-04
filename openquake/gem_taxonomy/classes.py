@@ -221,7 +221,7 @@ GemTaxonomy Info
                 args_list = [x.__repr__() for x in self.args]
                 self.paself.LogicIndentation -= 4
 
-                args = "\n%s<args>\n%s%s</args>" % (
+                args = "%s<args>\n%s%s</args>\n" % (
                     ' ' * (indent + 4),
                     ''.join(args_list),
                     ' ' * (indent + 4))
@@ -229,15 +229,25 @@ GemTaxonomy Info
                 args = ""
 
             if len(self.params) > 0:
-                params = '\n%s<params>%s\n%s</params>' % (
+                params = '%s<params>\n%s%s</params>\n' % (
                     ' ' * (indent + 4),
                     ''.join(["%s" % x.__repr__() for x in self.params]),
                     ' ' * (indent + 4),
                 )
             else:
                 params = ""
-            ret = "%s<ATOM id=\"0x%xd\" name=\"%s\">%s%s\n%s</ATOM>\n" % (
-                " " * indent, id(self), name, args, params, " " * indent)
+
+            if len(self.args) == 0 and len(self.params) == 0:
+                ret = ('%s<ATOM id="0x%xd" name="%s"'
+                       ' title="%s"/>\n') % (
+                           ' ' * indent, id(self), name,
+                           self.paself.tax['AtomDict'][name]['title'])
+            else:
+                ret = ('%s<ATOM id="0x%xd" name="%s"'
+                       ' title="%s">\n%s%s%s</ATOM>\n') % (
+                           ' ' * indent, id(self), name,
+                           self.paself.tax['AtomDict'][name]['title'],
+                           args, params, " " * indent)
 
             self.paself.LogicIndentation -= 4
 
@@ -248,19 +258,34 @@ GemTaxonomy Info
         TYPE_INT = 2
         TYPE_FLOAT = 3
 
+        def type_s(self):
+            return {
+                self.TYPE_OPTION: 'option',
+                self.TYPE_INT: 'int',
+                self.TYPE_FLOAT: 'float'}[self.type]
+
         SUBTYPE_NONE = 0
         SUBTYPE_DIS_LT = 1
         SUBTYPE_DIS_GT = 2
         SUBTYPE_RANGE = 3
         SUBTYPE_EXACT = 4
 
+        def subtype_s(self):
+            return {
+                self.SUBTYPE_NONE: 'none',
+                self.SUBTYPE_DIS_LT: 'less_than',
+                self.SUBTYPE_DIS_GT: 'greater_than',
+                self.SUBTYPE_RANGE: 'range',
+                self.SUBTYPE_EXACT: 'exact'}[self.subtype]
+
         UNIT_MEAS_SINGLE = 0
         UNIT_MEAS_PLURAL = 1
 
-        def __init__(self, paself, type, subtype, value, unit_meas):
+        def __init__(self, paself, type, subtype, title, value, unit_meas):
             self.paself = paself
             self.type = type
             self.subtype = subtype
+            self.title = title
             self.value = value
             self.unit_meas = unit_meas
             self.unit_meas_is_single = None
@@ -321,10 +346,48 @@ GemTaxonomy Info
             return ret
 
         def __repr__(self):
+            form = "%d" if self.type == self.TYPE_INT else "%s"
+            fconv = getattr(builtins, (
+                "int" if self.type == self.TYPE_INT else "float"))
+
             self.paself.LogicIndentation += 4
             indent = self.paself.LogicIndentation
-            ret = self.explain()
-            ret = '\n%s<param>%s</param>' % ((' ' * indent), ret)
+            if self.type == self.TYPE_OPTION:
+                # PAY ATTENTION:  currently TYPE_OPTION support
+                #                 just 1 parameter, for multiple parameter
+                # all the parents hierarchy must be available in the
+                # tax['Param'][<ATOM>] list of partial elements
+
+                self.paself.LogicIndentation += 4
+                indent = self.paself.LogicIndentation
+                v = '%s<value >%s</value>\n' % (
+                    ' ' * indent, self.value)
+                self.paself.LogicIndentation -= 4
+                indent = self.paself.LogicIndentation
+                ret = ('%s<param subtype="%s" title="%s" type="%s">'
+                       '\n%s%s</param>\n') % (
+                        (' ' * indent), self.subtype_s(),
+                        self.title, self.type_s(), v,
+                        (' ' * indent))
+            else:
+                self.paself.LogicIndentation += 4
+                indent = self.paself.LogicIndentation
+                if self.subtype == self.SUBTYPE_RANGE:
+                    v = "%s<value>%s</value>\n%s<value>%s</value>\n" % (
+                        ' ' * indent, form % fconv(self.value[0]),
+                        ' ' * indent, form % fconv(self.value[1]))
+                else:
+                    v = '%s<value>%s</value>\n' % (
+                        ' ' * indent, form % fconv(self.value))
+                self.paself.LogicIndentation -= 4
+                indent = self.paself.LogicIndentation
+
+                ret = ('%s<param subtype="%s" type="%s"'
+                       ' unit_meas_plural="%s"'
+                       ' unit_meas_single="%s">\n%s%s</param>\n') % (
+                           (' ' * indent), self.subtype_s(), self.type_s(),
+                           self.unit_meas[1], self.unit_meas[0], v,
+                           (' ' * indent))
             self.paself.LogicIndentation -= 4
 
             return ret
@@ -561,17 +624,25 @@ GemTaxonomy Info
                     'Atom [%s]: parameters options not found.' %
                     (atom_anc,))
             atom_options = self.tax['Param'][atom_name]
-            for atom_param in atom_params:
-                if (len(list(filter(
-                        lambda option: option['name'] == atom_param,
-                        atom_options))) < 1):
+            if len(atom_params) > 1:
+                raise ValueError(
+                    'Atom [%s]: multiple parameters options not supported.' %
+                    (atom_anc,))
+            for atom_param_idx, atom_param in enumerate(atom_params):
+                atom_param_key = ':'.join(atom_params[0:(
+                    atom_param_idx + 1)])
+                atom_option_list = list(filter(
+                    lambda option: option['name'] == atom_param_key,
+                    atom_options))
+                if (len(atom_option_list) < 1):
                     raise ValueError(
                         'Atom [%s]: parameters option [%s] not found.' %
-                        (atom_anc, atom_param))
+                        (atom_anc, atom_param_key))
                 l_params.append(self.LogicParam(
                     self, self.LogicParam.TYPE_OPTION,
                     self.LogicParam.SUBTYPE_NONE,
-                    [atom_name, atom_param], ''))
+                    atom_option_list[0]['title'],
+                    atom_param, ''))
         elif param_type_name == 'float' or param_type_name == 'int':
             for atom_param in atom_params:
                 self.check_single_value(atom_anc, param_type_name,
@@ -580,7 +651,7 @@ GemTaxonomy Info
                     self, (self.LogicParam.TYPE_FLOAT
                            if param_type_name == 'float'
                            else self.LogicParam.TYPE_INT),
-                    self.LogicParam.SUBTYPE_EXACT,
+                    self.LogicParam.SUBTYPE_EXACT, None,
                     atom_param, tax_params['unit_measure']))
         elif (param_type_name == 'rangeable_float' or
               param_type_name == 'rangeable_int'):
@@ -611,7 +682,7 @@ GemTaxonomy Info
                                else self.LogicParam.TYPE_INT),
                         (self.LogicParam.SUBTYPE_DIS_LT
                          if atom_param[0] == '<'
-                         else self.LogicParam.SUBTYPE_DIS_GT),
+                         else self.LogicParam.SUBTYPE_DIS_GT), None,
                         atom_param[1:], tax_params['unit_measure']))
                 else:
                     if param_type_name == 'rangeable_float':
@@ -654,7 +725,7 @@ GemTaxonomy Info
                                         atom_anc, atom_param))
                             l_params.append(self.LogicParam(
                                 self, self.LogicParam.TYPE_FLOAT,
-                                self.LogicParam.SUBTYPE_RANGE,
+                                self.LogicParam.SUBTYPE_RANGE, None,
                                 [float(flos[0].text), float(flos[1].text)],
                                 tax_params['unit_measure']))
                         else:
@@ -665,7 +736,7 @@ GemTaxonomy Info
                             l_params.append(self.LogicParam(
                                 self, self.LogicParam.TYPE_FLOAT,
                                 self.LogicParam.SUBTYPE_EXACT,
-                                float(atom_param),
+                                None, float(atom_param),
                                 tax_params['unit_measure']))
                     elif param_type_name == 'rangeable_int':
                         if re.findall("[^-]+-", atom_param):
@@ -706,7 +777,7 @@ GemTaxonomy Info
                                         atom_anc, atom_param))
                             l_params.append(self.LogicParam(
                                 self, self.LogicParam.TYPE_INT,
-                                self.LogicParam.SUBTYPE_RANGE,
+                                self.LogicParam.SUBTYPE_RANGE, None,
                                 [int(ints[0].text), int(ints[1].text)],
                                 tax_params['unit_measure']))
                         else:
@@ -716,7 +787,7 @@ GemTaxonomy Info
                                 atom_param, tax_params)
                             l_params.append(self.LogicParam(
                                 self, self.LogicParam.TYPE_INT,
-                                self.LogicParam.SUBTYPE_EXACT,
+                                self.LogicParam.SUBTYPE_EXACT, None,
                                 int(atom_param), tax_params['unit_measure']))
         return l_params
 
