@@ -84,8 +84,12 @@ GemTaxonomy Info
                 (TODO 'html')    - hyperlinked version of the
                                    explanation
         '''
-        output_type = self.EXPL_OUT_TYPE.DICT[
-            'textsingleline' if output_type_in is None else output_type_in]
+        try:
+            output_type = self.EXPL_OUT_TYPE.DICT[
+                'textsingleline' if output_type_in is None else output_type_in]
+        except KeyError:
+            raise ValueError('format %s unknown' % output_type_in)
+
         if output_type in [self.EXPL_OUT_TYPE.JSON]:
             ret = []
             for attr in attrs:
