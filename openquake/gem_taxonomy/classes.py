@@ -33,11 +33,13 @@ class GemTaxonomy:
     class EXPL_OUT_TYPE:
         SINGLELINE = 1
         MULTILINE = 2
-        # HTML = 3
+        JSON = 3
+        # HTML = 4
 
         DICT = {
             'textsingleline': SINGLELINE,
             'textmultiline': MULTILINE,
+            'json': JSON,
             # 'html': HTML,
         }
 
@@ -78,17 +80,24 @@ GemTaxonomy Info
                 'textmultiline'  - the explanation is splitted on
                                    many lines and indented to improve
                                    understandability
+                'json'           - json tree version of the output
                 (TODO 'html')    - hyperlinked version of the
                                    explanation
         '''
         output_type = self.EXPL_OUT_TYPE.DICT[
             'textsingleline' if output_type_in is None else output_type_in]
-        self.LogicIndSet(0)
-        s = ""
-        for attr in attrs:
-            s += attr.explain(output_type=output_type)
+        if output_type in [self.EXPL_OUT_TYPE.JSON]:
+            ret = []
+            for attr in attrs:
+                ret.append(attr.explain(output_type=output_type))
+            return ret
+        else:
+            self.LogicIndSet(0)
+            s = ""
+            for attr in attrs:
+                s += attr.explain(output_type=output_type)
 
-        return s
+            return s
 
     class LogicAttribute:
         def __init__(self, paself, attribute, atoms):
@@ -99,6 +108,16 @@ GemTaxonomy Info
         def explain(self, is_arg=False, output_type=None):
             if output_type is None:
                 output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
+
+            if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
+                return {
+                    'name': self.attribute['name'],
+                    'title': self.attribute['title'],
+                    'atoms': [atom.explain(
+                        is_arg=is_arg, output_type=output_type)
+                              for atom in self.atoms]
+                    }
+
             s = ""
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
@@ -158,6 +177,24 @@ GemTaxonomy Info
             if output_type is None:
                 output_type = GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE
 
+            if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
+                name = self.atom['name']
+                ret =  {
+                    'name': name,
+                    'title': self.paself.tax['AtomDict'][name][
+                        'title'],
+                }
+                if self.args:
+                    ret['args'] = [arg.explain(
+                        is_arg=True,
+                        output_type=GemTaxonomy.EXPL_OUT_TYPE.JSON) for
+                                   arg in self.args]
+                if self.params:
+                    ret['params'] = [param.explain(
+                        output_type=GemTaxonomy.EXPL_OUT_TYPE.JSON) for
+                               param in self.params]
+
+                return ret
             s = ""
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -165,7 +202,7 @@ GemTaxonomy Info
                 s += ' ' * indent
 
             if ', ' in self.atom['title']:
-                title = self.atom['title'].replace(', ', ' (') + ')'
+                title = '"%s"' % self.atom['title']
             else:
                 title = self.atom['title']
 
@@ -281,8 +318,10 @@ GemTaxonomy Info
         UNIT_MEAS_SINGLE = 0
         UNIT_MEAS_PLURAL = 1
 
-        def __init__(self, paself, type, subtype, title, value, unit_meas):
+        def __init__(self, paself, atom, type, subtype,
+                     title, value, unit_meas):
             self.paself = paself
+            self.atom = atom
             self.type = type
             self.subtype = subtype
             self.title = title
@@ -311,17 +350,36 @@ GemTaxonomy Info
                 raise ValueError('unknown param type %d' % self.type)
 
             if self.type == self.TYPE_OPTION:
-                # atom = self.paself.tax['AtomDict'][self.value[0]]
+                atom_name = self.atom.split(':')[0]
+                opt_key = ':'.join(self.atom.split(':')[1:] + [self.value])
                 param = [
-                    x for x in self.paself.tax['Param'][self.value[0]]
-                    if x['name'] == self.value[1]][0]
-                return param['title']
+                    x for x in self.paself.tax['Param'][atom_name]
+                    if x['name'] == opt_key][0]
+                if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
+                    return {
+                        'type': self.type_s(),
+                        'subtype': self.subtype_s(),
+                        'value': self.value,
+                        'title': [param['title']]
+                        }
+                else:
+                    return param['title']
             else:
                 # add other if if other types "%f" if
                 # self.type == self.TYPE_FLOAT)
                 form = "%d" if self.type == self.TYPE_INT else "%s"
                 fconv = getattr(builtins, (
                     "int" if self.type == self.TYPE_INT else "float"))
+                if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
+                    if type(self.value) is list:
+                        value = [fconv(v) for v in self.value]
+                    else:
+                        value = fconv(self.value)
+                    return {
+                        'type': self.type_s(),
+                        'subtype': self.subtype_s(),
+                        'value': value
+                        }
                 if self.subtype == self.SUBTYPE_DIS_LT:
                     value_out = form % fconv(self.value)
                     unit_meas_out = self.unit_meas_out(value_out)
@@ -639,7 +697,7 @@ GemTaxonomy Info
                         'Atom [%s]: parameters option [%s] not found.' %
                         (atom_anc, atom_param_key))
                 l_params.append(self.LogicParam(
-                    self, self.LogicParam.TYPE_OPTION,
+                    self, atom_name, self.LogicParam.TYPE_OPTION,
                     self.LogicParam.SUBTYPE_NONE,
                     atom_option_list[0]['title'],
                     atom_param, ''))
@@ -648,7 +706,7 @@ GemTaxonomy Info
                 self.check_single_value(atom_anc, param_type_name,
                                         atom_param, tax_params)
                 l_params.append(self.LogicParam(
-                    self, (self.LogicParam.TYPE_FLOAT
+                    self, atom_name, (self.LogicParam.TYPE_FLOAT
                            if param_type_name == 'float'
                            else self.LogicParam.TYPE_INT),
                     self.LogicParam.SUBTYPE_EXACT, None,
@@ -677,7 +735,7 @@ GemTaxonomy Info
                                 (atom_anc, single_type_name,
                                  tax_params['max']))
                     l_params.append(self.LogicParam(
-                        self, (self.LogicParam.TYPE_FLOAT
+                        self, atom_name, (self.LogicParam.TYPE_FLOAT
                                if param_type_name == 'rangeable_float'
                                else self.LogicParam.TYPE_INT),
                         (self.LogicParam.SUBTYPE_DIS_LT
@@ -724,7 +782,7 @@ GemTaxonomy Info
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
                             l_params.append(self.LogicParam(
-                                self, self.LogicParam.TYPE_FLOAT,
+                                self, atom_name, self.LogicParam.TYPE_FLOAT,
                                 self.LogicParam.SUBTYPE_RANGE, None,
                                 [float(flos[0].text), float(flos[1].text)],
                                 tax_params['unit_measure']))
@@ -734,7 +792,7 @@ GemTaxonomy Info
                                 atom_anc, 'float',
                                 atom_param, tax_params)
                             l_params.append(self.LogicParam(
-                                self, self.LogicParam.TYPE_FLOAT,
+                                self, atom_name, self.LogicParam.TYPE_FLOAT,
                                 self.LogicParam.SUBTYPE_EXACT,
                                 None, float(atom_param),
                                 tax_params['unit_measure']))
@@ -776,7 +834,7 @@ GemTaxonomy Info
                                     ' equal to the second [%s]' % (
                                         atom_anc, atom_param))
                             l_params.append(self.LogicParam(
-                                self, self.LogicParam.TYPE_INT,
+                                self, atom_name, self.LogicParam.TYPE_INT,
                                 self.LogicParam.SUBTYPE_RANGE, None,
                                 [int(ints[0].text), int(ints[1].text)],
                                 tax_params['unit_measure']))
@@ -786,7 +844,7 @@ GemTaxonomy Info
                                 atom_anc, 'int',
                                 atom_param, tax_params)
                             l_params.append(self.LogicParam(
-                                self, self.LogicParam.TYPE_INT,
+                                self, atom_name, self.LogicParam.TYPE_INT,
                                 self.LogicParam.SUBTYPE_EXACT, None,
                                 int(atom_param), tax_params['unit_measure']))
         return l_params
@@ -1067,8 +1125,9 @@ GemTaxonomy Info
 
         # self.logic_print(l_attrs_canon)
         # print(self.logic_explain(l_attrs_canon, 'textsingleline'))
-        # print("-----")
         # print(self.logic_explain(l_attrs_canon, 'textmultiline'))
+        # import pprint
+        # pprint.pprint(self.logic_explain(l_attrs_canon, 'json'))
 
         #
         if tax_str == tax_canon:
