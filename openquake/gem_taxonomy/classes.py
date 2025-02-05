@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
-import os
 import re
 import sys
 import json
@@ -28,6 +27,9 @@ from parsimonious.exceptions import (IncompleteParseError as
 from openquake.gem_taxonomy_data import GemTaxonomyData
 from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
+
+_NL = '''
+'''
 
 
 class GemTaxonomy:
@@ -127,11 +129,11 @@ GemTaxonomy Info
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += os.linesep
+                    s += _NL
                     self.paself.LogicIndInc(4)
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                j_str = ',' + os.linesep
+                j_str = ',' + _NL
             else:
                 j_str = ', '
 
@@ -150,7 +152,7 @@ GemTaxonomy Info
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE:
                     s += ' '
                 elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += os.linesep
+                    s += _NL
 
             if not is_arg:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -215,7 +217,7 @@ GemTaxonomy Info
             if self.args:
                 s += ' ('
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += os.linesep
+                    s += _NL
                     indent = self.paself.LogicIndInc(4)
 
                 n_args = len(self.args)
@@ -228,7 +230,7 @@ GemTaxonomy Info
                             s += '; '
                         elif (output_type ==
                               GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
-                            s += ';' + os.linesep
+                            s += ';' + _NL
                     # elif idx < (n_args - 1):
                     #     if (output_type ==
                     #         GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
@@ -237,7 +239,7 @@ GemTaxonomy Info
                     #           GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
                     #         s += ' and\n'
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += os.linesep
+                    s += _NL
                     indent = self.paself.LogicIndDec(4)
                     s += ' ' * indent
                 s += ')'
