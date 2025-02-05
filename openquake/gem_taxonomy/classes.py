@@ -62,15 +62,15 @@ GemTaxonomy Info
         print('  Atoms number            -    %d' % len(tax['Atom']),
               file=stdout)
         return {
-            "gem_taxonomy_version": __version__,
-            "gem_taxonomy_data_version": GTD_vers,
-            "gem_taxonomy_data_content_version": taxonomy_version,
-            "gem_taxonomy_data_atoms_number": len(tax['Atom'])
+            'gem_taxonomy_version': __version__,
+            'gem_taxonomy_data_version': GTD_vers,
+            'gem_taxonomy_data_content_version': taxonomy_version,
+            'gem_taxonomy_data_atoms_number': len(tax['Atom'])
         }
 
     def logic_print(self, attrs):
         self.LogicIndSet(0)
-        print("".join([x.__repr__() for x in attrs]))
+        print(''.join([x.__repr__() for x in attrs]))
 
     def logic_explain(self, attrs, output_type_in=None):
         '''
@@ -93,7 +93,7 @@ GemTaxonomy Info
             return ret
         else:
             self.LogicIndSet(0)
-            s = ""
+            s = ''
             for attr in attrs:
                 s += attr.explain(output_type=output_type)
 
@@ -118,11 +118,11 @@ GemTaxonomy Info
                               for atom in self.atoms]
                     }
 
-            s = ""
+            s = ''
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += "\n"
+                    s += '\n'
                     self.paself.LogicIndInc(4)
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -141,11 +141,11 @@ GemTaxonomy Info
                 self.paself.LogicIndDec(4)
 
             if not is_arg:
-                s += "."
+                s += '.'
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE:
                     s += ' '
                 elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += "\n"
+                    s += '\n'
 
             if not is_arg:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -155,11 +155,11 @@ GemTaxonomy Info
         def __repr__(self):
             indent = self.paself.LogicIndentation
             self.paself.LogicIndentation += 4
-            ret = "%s<ATTR id=\"0x%xd\" name=\"%s\">\n%s%s</ATTR>\n" % (
-                (" " * indent),
+            ret = '%s<ATTR id="0x%xd" name="%s">\n%s%s</ATTR>\n' % (
+                (' ' * indent),
                 id(self), self.attribute['name'],
                 ''.join([x.__repr__() for x in self.atoms]),
-                (" " * indent)
+                (' ' * indent)
             )
             self.paself.LogicIndentation -= 4
             return ret
@@ -179,7 +179,7 @@ GemTaxonomy Info
 
             if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
                 name = self.atom['name']
-                ret =  {
+                ret = {
                     'name': name,
                     'title': self.paself.tax['AtomDict'][name][
                         'title'],
@@ -195,7 +195,7 @@ GemTaxonomy Info
                                param in self.params]
 
                 return ret
-            s = ""
+            s = ''
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
                 indent = self.paself.LogicIndGet()
@@ -205,11 +205,6 @@ GemTaxonomy Info
                 title = '"%s"' % self.atom['title']
             else:
                 title = self.atom['title']
-
-            # if is_arg is False:
-            #     s = title.lower()
-            # else:
-            #     s = title
             s += title
 
             if self.args:
@@ -232,14 +227,14 @@ GemTaxonomy Info
                     # elif idx < (n_args - 1):
                     #     if (output_type ==
                     #         GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
-                    #         s += " and "
+                    #         s += ' and '
                     #     elif (output_type ==
                     #           GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
-                    #         s += " and\n"
+                    #         s += ' and\n'
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
                     s += '\n'
                     indent = self.paself.LogicIndDec(4)
-                    s += " " * indent
+                    s += ' ' * indent
                 s += ')'
             if self.params:
                 s += ': '
@@ -258,21 +253,21 @@ GemTaxonomy Info
                 args_list = [x.__repr__() for x in self.args]
                 self.paself.LogicIndentation -= 4
 
-                args = "%s<args>\n%s%s</args>\n" % (
+                args = '%s<args>\n%s%s</args>\n' % (
                     ' ' * (indent + 4),
                     ''.join(args_list),
                     ' ' * (indent + 4))
             else:
-                args = ""
+                args = ''
 
             if len(self.params) > 0:
                 params = '%s<params>\n%s%s</params>\n' % (
                     ' ' * (indent + 4),
-                    ''.join(["%s" % x.__repr__() for x in self.params]),
+                    ''.join(['%s' % x.__repr__() for x in self.params]),
                     ' ' * (indent + 4),
                 )
             else:
-                params = ""
+                params = ''
 
             if len(self.args) == 0 and len(self.params) == 0:
                 ret = ('%s<ATOM id="0x%xd" name="%s"'
@@ -284,7 +279,7 @@ GemTaxonomy Info
                        ' title="%s">\n%s%s%s</ATOM>\n') % (
                            ' ' * indent, id(self), name,
                            self.paself.tax['AtomDict'][name]['title'],
-                           args, params, " " * indent)
+                           args, params, ' ' * indent)
 
             self.paself.LogicIndentation -= 4
 
@@ -365,11 +360,11 @@ GemTaxonomy Info
                 else:
                     return param['title']
             else:
-                # add other if if other types "%f" if
+                # add other if if other types '%f' if
                 # self.type == self.TYPE_FLOAT)
-                form = "%d" if self.type == self.TYPE_INT else "%s"
+                form = '%d' if self.type == self.TYPE_INT else '%s'
                 fconv = getattr(builtins, (
-                    "int" if self.type == self.TYPE_INT else "float"))
+                    'int' if self.type == self.TYPE_INT else 'float'))
                 if output_type in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
                     if type(self.value) is list:
                         value = [fconv(v) for v in self.value]
@@ -383,30 +378,30 @@ GemTaxonomy Info
                 if self.subtype == self.SUBTYPE_DIS_LT:
                     value_out = form % fconv(self.value)
                     unit_meas_out = self.unit_meas_out(value_out)
-                    ret = "less than %s %s" % (value_out, unit_meas_out)
+                    ret = 'less than %s %s' % (value_out, unit_meas_out)
                 elif self.subtype == self.SUBTYPE_DIS_GT:
                     value_out = form % fconv(self.value)
                     unit_meas_out = self.unit_meas_out(value_out)
-                    ret = "greater than %s %s" % (value_out, unit_meas_out)
+                    ret = 'greater than %s %s' % (value_out, unit_meas_out)
                 elif self.subtype == self.SUBTYPE_RANGE:
                     unit_meas_out = self.unit_meas[self.UNIT_MEAS_PLURAL]
-                    ret = "between %s and %s %s" % (
+                    ret = 'between %s and %s %s' % (
                         form % fconv(self.value[0]),
                         form % fconv(self.value[1]),
                         unit_meas_out)
                 elif self.subtype == self.SUBTYPE_EXACT:
                     value_out = form % fconv(self.value)
                     unit_meas_out = self.unit_meas_out(value_out)
-                    ret = "%s %s" % (value_out, unit_meas_out)
+                    ret = '%s %s' % (value_out, unit_meas_out)
                 else:
                     raise ValueError('unknown param subtype %d' % self.subtype)
 
             return ret
 
         def __repr__(self):
-            form = "%d" if self.type == self.TYPE_INT else "%s"
+            form = '%d' if self.type == self.TYPE_INT else '%s'
             fconv = getattr(builtins, (
-                "int" if self.type == self.TYPE_INT else "float"))
+                'int' if self.type == self.TYPE_INT else 'float'))
 
             self.paself.LogicIndentation += 4
             indent = self.paself.LogicIndentation
@@ -431,7 +426,7 @@ GemTaxonomy Info
                 self.paself.LogicIndentation += 4
                 indent = self.paself.LogicIndentation
                 if self.subtype == self.SUBTYPE_RANGE:
-                    v = "%s<value>%s</value>\n%s<value>%s</value>\n" % (
+                    v = '%s<value>%s</value>\n%s<value>%s</value>\n' % (
                         ' ' * indent, form % fconv(self.value[0]),
                         ' ' * indent, form % fconv(self.value[1]))
                 else:
@@ -454,22 +449,22 @@ GemTaxonomy Info
         self.LogicIndentation = 0
 
         if vers == '3.3':
-            self.attr_grammar = Grammar(r"""
+            self.attr_grammar = Grammar(r'''
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
                 atom_params = ":" ~r"[A-Za-z0-9<>-][A-Za-z0-9.-]*"
-                """)
+                ''')
 
-            # flo = ~r"[0-9]+"
-            self.rangefloat_grammar = Grammar(r"""
+            # flo = ~r'[0-9]+'
+            self.rangefloat_grammar = Grammar(r'''
                 range = float_value "-" float_value
                 float_value = ~r"[0-9-]?" ~r"[0-9.]*" ( ~r"e[+-]?[0-9]+" )?
-                """)
-            self.rangeint_grammar = Grammar(r"""
+                ''')
+            self.rangeint_grammar = Grammar(r'''
                 range = integer_value "-" integer_value
                 integer_value = ~r"[0-9-]" ~r"[0-9]*"
-                """)
+                ''')
 
         self.gtd = GemTaxonomyData()
         self.tax = self.gtd.load(vers)
@@ -521,7 +516,7 @@ GemTaxonomy Info
 
     def validate_arguments(self, attr_base, atom_anc, tax_args, tree_args,
                            atom_args_orig_in, filtered_atoms):
-        """
+        '''
         attr_base: attribute base
         atom_anc: atom string included args and params
         tax_args: 'args' field of gem_tax['Atom'] element
@@ -531,7 +526,7 @@ GemTaxonomy Info
 
         RETURN:
         args_canon if arguments are filtered_attribute
-        """
+        '''
         l_args = []
         arg_type_name = tax_args['type'].split('(')[0]
 
@@ -554,7 +549,7 @@ GemTaxonomy Info
                         set(args_info['filtered_atoms']))))
                 args_list_canon.append(attr_canon)
                 l_args.append(l_arg)
-                # print("val_args: attr_canon: [%s]" % attr_canon)
+                # print('val_args: attr_canon: [%s]' % attr_canon)
             if 'must_be_diff' in tax_args and tax_args['must_be_diff']:
                 same_elem = [item for item, count in collections.Counter(
                     args_list_canon).items() if count > 1]
@@ -563,13 +558,11 @@ GemTaxonomy Info
                         'Attribute [%s]: for atom [%s] identical '
                         'arguments are denied [%s].' % (
                             attr_base, atom_anc, same_elem[0]))
-            args_canon = ";".join(args_list_canon)
-            # print("val_args: args_canon: [%s]" % args_canon)
+            args_canon = ';'.join(args_list_canon)
+            # print('val_args: args_canon: [%s]' % args_canon)
             return args_canon, l_args
         elif arg_type_name == 'filtered_atomsgroup':
             args_list_canon = []
-            # args_info['atomsgroup_name']
-            # args_info['filtered_atoms']
             for tree_arg in tree_args:
                 atom_name = tree_arg.children[0].children[0].text
                 l_arg = self.LogicAtom(
@@ -596,7 +589,7 @@ GemTaxonomy Info
                         'Attribute [%s], forbidden atom found [%s].' % (
                             attr_base, atom_name))
                 l_args.append(l_arg)
-            args_canon = ";".join(args_list_canon)
+            args_canon = ';'.join(args_list_canon)
             return args_canon, l_args
 
     def params_get(self, tax_params, attr):
@@ -640,7 +633,7 @@ GemTaxonomy Info
                     ('Atom [%s]: value [%s] less%s then min value ['
                      + ty_form + '].') %
                     (atom_anc, atom_param,
-                     (" or equal" if not m_incl else ""),
+                     (' or equal' if not m_incl else ''),
                      tax_params['min']))
 
         if 'max' in tax_params:
@@ -652,14 +645,14 @@ GemTaxonomy Info
                     ('Atom [%s]: value [%s] greater%s'
                      ' then max value [' + ty_form + '].') %
                     (atom_anc, atom_param,
-                     (" or equal" if not m_incl else ""),
+                     (' or equal' if not m_incl else ''),
                      tax_params['max']))
 
         return v
 
     def validate_parameters(self, attr_base, atom_tree, tax_params,
                             atom_params, atom_params_orig_in):
-        """
+        '''
         atom_args: list of arguments
 
 
@@ -668,7 +661,7 @@ GemTaxonomy Info
         tax_params: 'params' field of gem_tax['Atom'] element
         atom_params: list of parameters (strings)
         atom_params_orig_in: flattened hierarchy of current atom
-        """
+        '''
 
         l_params = []
         # NOTE: currently not parameter types with args but we can foresee them
@@ -707,8 +700,8 @@ GemTaxonomy Info
                                         atom_param, tax_params)
                 l_params.append(self.LogicParam(
                     self, atom_name, (self.LogicParam.TYPE_FLOAT
-                           if param_type_name == 'float'
-                           else self.LogicParam.TYPE_INT),
+                                      if param_type_name == 'float'
+                                      else self.LogicParam.TYPE_INT),
                     self.LogicParam.SUBTYPE_EXACT, None,
                     atom_param, tax_params['unit_measure']))
         elif (param_type_name == 'rangeable_float' or
@@ -735,16 +728,17 @@ GemTaxonomy Info
                                 (atom_anc, single_type_name,
                                  tax_params['max']))
                     l_params.append(self.LogicParam(
-                        self, atom_name, (self.LogicParam.TYPE_FLOAT
-                               if param_type_name == 'rangeable_float'
-                               else self.LogicParam.TYPE_INT),
+                        self, atom_name, (
+                            self.LogicParam.TYPE_FLOAT
+                            if param_type_name == 'rangeable_float'
+                            else self.LogicParam.TYPE_INT),
                         (self.LogicParam.SUBTYPE_DIS_LT
                          if atom_param[0] == '<'
                          else self.LogicParam.SUBTYPE_DIS_GT), None,
                         atom_param[1:], tax_params['unit_measure']))
                 else:
                     if param_type_name == 'rangeable_float':
-                        if re.findall("[^-]+-", atom_param):
+                        if re.findall('[^-]+-', atom_param):
                             try:
                                 rangefloat_tree = (
                                     self.rangefloat_grammar.parse(
@@ -797,7 +791,7 @@ GemTaxonomy Info
                                 None, float(atom_param),
                                 tax_params['unit_measure']))
                     elif param_type_name == 'rangeable_int':
-                        if re.findall("[^-]+-", atom_param):
+                        if re.findall('[^-]+-', atom_param):
                             try:
                                 rangeint_tree = self.rangeint_grammar.parse(
                                     atom_param)
@@ -851,7 +845,7 @@ GemTaxonomy Info
 
     def validate_attribute(self, attr_base, attr_tree, attr_scope,
                            attr_name, filtered_atoms):
-        """
+        '''
         attr_base:      full attribute (recursion invariant)
         attr_tree:      current evaluated attribute tree
         attr_scope:     linearized description of current atom scope
@@ -862,7 +856,7 @@ GemTaxonomy Info
 
         RETURN:
         attr_name, l_attr
-        """
+        '''
         attr = attr_tree.text
         atoms_trees = self.extract_atoms(attr_tree)
         atom_names_in = []
@@ -886,7 +880,7 @@ GemTaxonomy Info
                         attr_base, attr_scope, atom))
 
             atom_name = atom_tree.children[0].text
-            args_canon = ""
+            args_canon = ''
             tree_args = []
             len_tree_args = 0
             atom_tree_args = atom_tree.children[1]
@@ -1003,7 +997,7 @@ GemTaxonomy Info
                     atom, tax_args, tree_args,
                     args_attr_scope, filtered_atoms)
                 l_atom.args = l_args
-                # print("val_attr: args_canon: [%s]" % args_canon)
+                # print('val_attr: args_canon: [%s]' % args_canon)
             else:
                 # if not args check if arguments are present
                 if len(tree_args) > 0:
@@ -1048,22 +1042,22 @@ GemTaxonomy Info
             if len_tree_args > 0:
                 if len(params) > 0:
                     atoms_canon_in.append(
-                        "%s(%s):%s" % (
+                        '%s(%s):%s' % (
                             atom_name, args_canon,
-                            ":".join(params)))
+                            ':'.join(params)))
                 else:
                     atoms_canon_in.append(
-                        "%s(%s)" % (
+                        '%s(%s)' % (
                             atom_name, args_canon))
             else:
                 if len(params) > 0:
                     atoms_canon_in.append(
-                        "%s:%s" % (
-                            atom_name, ":".join(params)))
+                        '%s:%s' % (
+                            atom_name, ':'.join(params)))
                 else:
-                    atoms_canon_in.append("%s" % (
+                    atoms_canon_in.append('%s' % (
                         atom_name))
-            # print("val_attr: atoms_canon_in %s" % atoms_canon_in)
+            # print('val_attr: atoms_canon_in %s' % atoms_canon_in)
             l_atoms.append(l_atom)
             # end atoms loop
 
@@ -1118,7 +1112,7 @@ GemTaxonomy Info
                       in attr_name_in]
         attr_name_canon = [x for _, x in sorted(
             zip(attr_progs, attr_name_in))]
-        tax_canon = "/".join([attr_canon_in[x] for x in
+        tax_canon = '/'.join([attr_canon_in[x] for x in
                               attr_name_canon])
         l_attrs_canon = [x for _, x in sorted(
             zip(attr_progs, l_attrs))]
