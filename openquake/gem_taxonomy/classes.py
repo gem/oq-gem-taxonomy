@@ -75,7 +75,7 @@ GemTaxonomy Info
         self.LogicIndSet(0)
         print(''.join([x.__repr__() for x in attrs]))
 
-    def logic_explain(self, attrs, output_type_in=None):
+    def logic_explain(self, attrs, format=None):
         '''
             output_type should be:
                 'textsingleline' - all the explanation in a single
@@ -89,9 +89,9 @@ GemTaxonomy Info
         '''
         try:
             output_type = self.EXPL_OUT_TYPE.DICT[
-                'textsingleline' if output_type_in is None else output_type_in]
+                'textsingleline' if format is None else format]
         except KeyError:
-            raise ValueError('format %s unknown' % output_type_in)
+            raise ValueError('format %s unknown' % format)
 
         if output_type in [self.EXPL_OUT_TYPE.JSON]:
             ret = []
@@ -1093,15 +1093,26 @@ GemTaxonomy Info
         attr_name_in = []
         attr_in = {}
         attr_canon_in = {}
-
         attrs = tax_str.split('/')
         for attr in attrs:
             try:
                 attr_tree = self.attr_grammar.parse(attr)
             except ParsimParseError as exc:
+                spec_info = ''
+                if re.search(
+                        'The non-matching portion of the text begins with \'\(.+\)\'',
+                        exc.__str__()):
+                    spec_info = ('Atom arguments must be included in rounded brackets'
+                                 ' and separated by \';\' character.')
+                elif re.search(
+                        'The non-matching portion of the text begins with \'\(\)\'',
+                        exc.__str__()):
+                    spec_info = ('Empty rounded brackets are not allowed for atoms with'
+                                 ' optional arguments.')
                 raise ValueError(
-                    'Attribute [%s] parsing error: %s.' %
-                    (attr, str(exc).rstrip('.')))
+                    '%sAttribute [%s] parsing error: %s.' %
+                    ((("%s " % spec_info) if spec_info else ''),
+                    attr, str(exc).rstrip('.')))
 
             attr_name, attr_canon, l_attr = self.validate_attribute(
                 attr, attr_tree, '', None, [])
@@ -1137,3 +1148,12 @@ GemTaxonomy Info
             return(l_attrs_canon, {'is_canonical': False,
                                    'original': tax_str,
                                    'canonical': tax_canon})
+
+    def explain(self, tax_str, fmt='textsingleline'):
+        # try:
+        l_attrs, _ = self.validate(tax_str)
+        #except (ValueError, ParsimParseError,
+        #        ParsimIncompleteParseError) as exc:
+        #    return str(exc)
+
+        return self.logic_explain(l_attrs, format=fmt)

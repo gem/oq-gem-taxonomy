@@ -32,9 +32,11 @@ taxonomy_strings = [
      ' associations: [C]->[material] vs [LO]->[llrs]'),
     ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at'
      ' least 2 arguments, 1 found [MDD(W)].'),
-    ('MDD(W,Z)', 'Attribute [MDD(W,Z)] parsing error: Rule \'attr\' matched'
-     ' in its entirety, but it didn\'t consume all the text. The non-matching'
-     ' portion of the text begins with \'(W,Z)\' (line 1, column 4).'),
+    ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
+     ' separated by \';\' character. Attribute [MDD(W,Z)] parsing error:'
+     ' Rule \'attr\' matched in its entirety, but it didn\'t consume all'
+     ' the text. The non-matching portion of the text begins with'
+     ' \'(W,Z)\' (line 1, column 4).'),
 
     ('HYB(C;S)', None, None,
      '<ATTR id="0xADDR" name="material">\n    <ATOM id="0xADDR" name="HYB"'
@@ -87,10 +89,11 @@ taxonomy_strings = [
      '                <ATOM id="0xADDR" name="S" title="Steel"/>\n'
      '            </ATTR>\n        </args>\n'
      '    </ATOM>\n</ATTR>\n'),
-    ('MDD(HYB(C,S,W);S)', 'Attribute [MDD(HYB(C,S,W);S)] parsing error: Rule'
-     ' \'attr\' matched in its entirety, but it didn\'t consume all the text.'
-     ' The non-matching portion of the text begins with \'(HYB(C,S,W);S)\''
-     ' (line 1, column 4).'),
+    ('MDD(HYB(C,S,W);S)', 'Atom arguments must be included in rounded brackets'
+     ' and separated by \';\' character. Attribute [MDD(HYB(C,S,W);S)] parsing'
+     ' error: Rule \'attr\' matched in its entirety, but it didn\'t consume all'
+     ' the text. The non-matching portion of the text begins with \'(HYB(C,S,W);'
+     'S)\' (line 1, column 4).'),
     ('MDD(HYB(C;S;W);S)', None, None, '<ATTR id="0xADDR" name="material">\n'
      '    <ATOM id="0xADDR" name="MDD" title="Different materials in the two'
      ' directions">\n        <args>\n            <ATTR id="0xADDR"'
@@ -113,9 +116,10 @@ taxonomy_strings = [
      '    </ATOM>\n</ATTR>\n'),
     ('MDD(HYB(S;W(X;Y)))', 'Attribute [MDD(HYB(S;W(X;Y)))]: atom MDD requires'
      ' at least 2 arguments, 1 found [MDD(HYB(S;W(X;Y)))].'),
-    ('MDD(HYB(S;W(X;Y)), S)', 'Attribute [MDD(HYB(S;W(X;Y)), S)] parsing'
-     ' error: Rule \'attr\' matched in its entirety, but it didn\'t consume'
-     ' all the text. The non-matching portion of the text begins with'
+    ('MDD(HYB(S;W(X;Y)), S)', 'Atom arguments must be included in rounded '
+     'brackets and separated by \';\' character. Attribute [MDD(HYB(S;W(X;Y)),'
+     ' S)] parsing error: Rule \'attr\' matched in its entirety, but it didn\'t'
+     ' consume all the text. The non-matching portion of the text begins with'
      ' \'(HYB(S;W(X;Y)), S)\' (line 1, column 4).'),
     ('MDD(HYB(S;W(X;Y));S)', 'Attribute [MDD(HYB(S;W(X;Y));S)]: argument[s]'
      ' not expected for atom [W].'),
@@ -123,15 +127,20 @@ taxonomy_strings = [
      ' forbidden atom recursion found [MDD].'),
     ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at least 2 arguments,'
      ' 1 found [MDD(W)].'),
-    ('MDD(W, Z)', 'Attribute [MDD(W, Z)] parsing error: Rule \'attr\' matched'
-     ' in its entirety, but it didn\'t consume all the text. The non-matching'
-     ' portion of the text begins with \'(W, Z)\' (line 1, column 4).'),
-    ('MDD(W,Z)', 'Attribute [MDD(W,Z)] parsing error: Rule \'attr\' matched'
-     ' in its entirety, but it didn\'t consume all the text. The non-matching'
-     ' portion of the text begins with \'(W,Z)\' (line 1, column 4).'),
+    ('MDD(W, Z)', 'Atom arguments must be included in rounded brackets and'
+     ' separated by \';\' character. Attribute [MDD(W, Z)] parsing error:'
+     ' Rule \'attr\' matched in its entirety, but it didn\'t consume all the text.'
+     ' The non-matching portion of the text begins with \'(W, Z)\' (line 1,'
+     ' column 4).'),
+    ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
+     ' separated by \';\' character. Attribute [MDD(W,Z)] parsing error: Rule'
+     ' \'attr\' matched in its entirety, but it didn\'t consume all the text.'
+     ' The non-matching portion of the text begins with \'(W,Z)\' (line 1,'
+     ' column 4).'),
     ('MDD(W;Z)', 'Attribute [MDD(W;Z)]: unknown atom [Z].'),
 
-    ('W()', 'Attribute [W()] parsing error: Rule \'attr\' matched in its'
+    ('W()', 'Empty rounded brackets are not allowed for atoms with optional'
+     ' arguments. Attribute [W()] parsing error: Rule \'attr\' matched in its'
      ' entirety, but it didn\'t consume all the text. The non-matching portion'
      ' of the text begins with \'()\' (line 1, column 2).'),
 
@@ -180,7 +189,8 @@ taxonomy_strings = [
      '                <ATOM id="0xADDR" name="MUR" title="Masonry,'
      ' unreinforced"/>\n            </ATTR>\n        </args>\n'
      '    </ATOM>\n</ATTR>\n'),
-    ('LFINF()', 'Attribute [LFINF()] parsing error: Rule \'attr\' matched'
+    ('LFINF()', 'Empty rounded brackets are not allowed for atoms with optional'
+     ' arguments. Attribute [LFINF()] parsing error: Rule \'attr\' matched'
      ' in its entirety, but it didn\'t consume all the text. The non-matching'
      ' portion of the text begins with \'()\' (line 1, column 6).'),
 

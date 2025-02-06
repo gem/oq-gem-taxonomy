@@ -52,7 +52,7 @@ def validate():
     gt = GemTaxonomy()
 
     try:
-        report = gt.validate(args.taxonomy_str)
+        _, report = gt.validate(args.taxonomy_str)
         if args.report:
             print(json.dumps(report))
     except (ValueError, ParsimParseError,
@@ -63,6 +63,43 @@ def validate():
         sys.exit(0 if report['is_canonical'] else 1)
     else:
         sys.exit(0)
+
+
+def explain():
+    format_default = GemTaxonomy.EXPL_OUT_TYPE.MULTILINE
+    formats_str = ', '.join([
+        ('"%s" (default)' if GemTaxonomy.EXPL_OUT_TYPE.DICT[
+            x] == format_default else '"%s"') % x for x in
+        GemTaxonomy.EXPL_OUT_TYPE.DICT.keys()])
+
+    parser = argparse.ArgumentParser(
+        description='Validate taxonomy string (version 3.3).')
+    parser.add_argument(
+        'taxonomy_str', type=str, help='The taxonomy string to validate')
+    parser.add_argument(
+        '-f', '--format',
+        help=formats_str,
+        default=list(
+            GemTaxonomy.EXPL_OUT_TYPE.DICT.keys())[
+                list(GemTaxonomy.EXPL_OUT_TYPE.DICT.values()).index(
+                    format_default)]
+    )
+    parser.add_argument('-V', '--version', action='version',
+                        version='%s' % __version__,
+                        help='show application version and exit')
+
+    args = parser.parse_args()
+
+    gt = GemTaxonomy()
+
+    try:
+        expl = gt.explain(args.taxonomy_str, fmt=args.format)
+    except (ValueError, ParsimParseError,
+            ParsimIncompleteParseError) as exc:
+        print(str(exc))
+        sys.exit(1)
+    print(json.dumps(expl))
+    sys.exit(0)
 
 
 def csv_validate():
