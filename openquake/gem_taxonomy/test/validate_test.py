@@ -19,9 +19,6 @@ import os
 import re
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
-from parsimonious.exceptions import ParseError as ParsimParseError
-from parsimonious.exceptions import (IncompleteParseError as
-                                     ParsimIncompleteParseError)
 taxonomy_strings = [
     ('!?', 'Attribute [!?] parsing error: Rule \'attr\' didn\'t'
      ' match at \'!?\' (line 1, column 1).'),
