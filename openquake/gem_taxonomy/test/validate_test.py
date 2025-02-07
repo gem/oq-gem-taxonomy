@@ -459,6 +459,14 @@ def to_log(s_exp):
             if s_exp[1] is not None else (s_exp[0], 'Success'))
 
 
+class InfoTestCase(unittest.TestCase):
+    def test(self):
+        self.maxDiff = None
+        GemTaxonomy.info()
+        GemTaxonomy.info(fmt='dict')
+        GemTaxonomy.info(fmt='json')
+
+
 class ValidateTestCase(unittest.TestCase):
     def test(self):
         self.maxDiff = None
@@ -496,15 +504,19 @@ class ValidateTestCase(unittest.TestCase):
                     str(exc), tax[1],
                     msg='Expected "%s" Found "%s"' %
                     (tax[1], str(exc)))
-            except (ParsimParseError,
-                    ParsimIncompleteParseError) as exc:
-                self.assertEqual(
-                    str(exc), tax[1],
-                    msg='Expected "%s" Found "%s"' %
-                        (tax[1], str(exc)))
 
-#                 logexp = gt.logic_explain(
-#                    l_attrs_canon, 'textsingleline')
+
+class ValidateSuccessOnlyTestCase(ValidateTestCase):
+    @classmethod
+    def setup_class(cls):
+        os.environ['ONLY_SUCCESS'] = 'True'
+
+    @classmethod
+    def teardown_class(cls):
+        del os.environ['ONLY_SUCCESS']
+
+    def test(self):
+        super().test()
 
 
 class ReprTestCase(unittest.TestCase):
@@ -517,24 +529,27 @@ class ReprTestCase(unittest.TestCase):
         for tax in taxonomy_strings:
             if tax[1] is not None:
                 continue
+
+            l_attrs_canon, output = gt.validate(tax[0])
+            repr = gt.logic_print(l_attrs_canon)
+            repr = re.sub('0x[0-9a-f]+', '0xADDR', repr)
+            # print('trepr: [%s]' % repr)
+            self.assertEqual(repr, tax[3])
+
+
+class ExplainTestCase(unittest.TestCase):
+    # Use code like this to generate comparison strings
+    # cat > temp.log ;  cut -c 19- < temp.log | sed 's/$/\\n/g' | \
+    #     tr -d '\n' ; echo
+    def test(self):
+        self.maxDiff = None
+        gt = GemTaxonomy()
+        for tax in taxonomy_strings:
+            if tax[1] is not None:
+                continue
             # print('tzero: [%s]' % tax[0])
 
-            try:
-                l_attrs_canon, output = gt.validate(tax[0])
-                repr = ''.join(
-                    [l_attr_canon.__repr__() for l_attr_canon in
-                     l_attrs_canon])
-                repr = re.sub('0x[0-9a-f]+', '0xADDR', repr)
-                # print('trepr: [%s]' % repr)
-                self.assertEqual(repr, tax[3])
-            except ValueError as exc:
-                self.assertEqual(
-                    str(exc), tax[1],
-                    msg='Expected "%s" Found "%s"' %
-                    (tax[1], str(exc)))
-            except (ParsimParseError,
-                    ParsimIncompleteParseError) as exc:
-                self.assertEqual(
-                    str(exc), tax[1],
-                    msg='Expected "%s" Found "%s"' %
-                        (tax[1], str(exc)))
+            gt.explain(tax[0])
+            gt.explain(tax[0], fmt='textsingleline')
+            gt.explain(tax[0], fmt='textmultiline')
+            gt.explain(tax[0], fmt='json')

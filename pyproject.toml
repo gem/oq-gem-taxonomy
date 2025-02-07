@@ -8,9 +8,9 @@ dynamic = ["version"]
 
 dependencies = [
    "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git@v1.0.3",
-   "parsimonious == 0.10.0",
-   "pytest == 8.3.3",
+   "parsimonious == 0.10.0"
 ]
+
 requires-python = ">=3"
 authors = [
   {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
@@ -41,7 +41,9 @@ version = {attr = "openquake.gem_taxonomy.version.__version__"}
 egg_base = ".egg_dir"
 
 [project.optional-dependencies]
-cli = [
+test = [
+   "pytest == 8.3.3",
+   "pytest-cov == 6.0.0"
 ]
 
 [project.urls]

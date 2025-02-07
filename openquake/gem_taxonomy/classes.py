@@ -46,34 +46,41 @@ class GemTaxonomy:
             # 'html': HTML,
         }
 
+    class INFO_OUT_TYPE:
+        TEXT = 1
+        JSON = 2
+
+        DICT = {
+            'text': TEXT,
+            'json': JSON,
+        }
+
     # method to test package infrastructure
     @staticmethod
-    def info(stdout=None):
-        if stdout is None:
-            stdout = sys.stdout
+    def info(fmt='text'):
         taxonomy_version = '3.3'
-        print('''
-GemTaxonomy Info
-----------------
-''', file=stdout)
-        print('  GemTaxonomy Package     - v. %s' % __version__, file=stdout)
-        print('  GemTaxonomyData Package - v. %s' % GTD_vers, file=stdout)
         gtd = GemTaxonomyData()
         tax = gtd.load(taxonomy_version)
-        print('  Loaded Taxonomy Data    - v. %s' % taxonomy_version,
-              file=stdout)
-        print('  Atoms number            -    %d' % len(tax['Atom']),
-              file=stdout)
-        return {
-            'gem_taxonomy_version': __version__,
-            'gem_taxonomy_data_version': GTD_vers,
-            'gem_taxonomy_data_content_version': taxonomy_version,
-            'gem_taxonomy_data_atoms_number': len(tax['Atom'])
-        }
+        if fmt == 'text':
+            s = '''GemTaxonomy Info
+----------------
+'''
+            s += '  GemTaxonomy Package     - v. %s\n' % __version__
+            s += '  GemTaxonomyData Package - v. %s\n' % GTD_vers
+            s += '  Loaded Taxonomy Data    - v. %s\n' % taxonomy_version
+            s += '  Atoms number            -    %d\n' % len(tax['Atom'])
+            return s
+        elif fmt == 'dict':
+            return {
+                'gem_taxonomy_version': __version__,
+                'gem_taxonomy_data_version': GTD_vers,
+                'gem_taxonomy_data_content_version': taxonomy_version,
+                'gem_taxonomy_data_atoms_number': len(tax['Atom']),
+            }
 
     def logic_print(self, attrs):
         self.LogicIndSet(0)
-        print(''.join([x.__repr__() for x in attrs]))
+        return ''.join([x.__repr__() for x in attrs])
 
     def logic_explain(self, attrs, format=None):
         '''
@@ -1097,22 +1104,27 @@ GemTaxonomy Info
         for attr in attrs:
             try:
                 attr_tree = self.attr_grammar.parse(attr)
-            except ParsimParseError as exc:
+            except (ParsimParseError,
+                    ParsimIncompleteParseError) as exc:
                 spec_info = ''
                 if re.search(
-                        'The non-matching portion of the text begins with \'\(.+\)\'',
+                        'The non-matching portion of the'
+                        ' text begins with \'\\(.+\\)\'',
                         exc.__str__()):
-                    spec_info = ('Atom arguments must be included in rounded brackets'
+                    spec_info = ('Atom arguments must be'
+                                 ' included in rounded brackets'
                                  ' and separated by \';\' character.')
                 elif re.search(
-                        'The non-matching portion of the text begins with \'\(\)\'',
+                        'The non-matching portion of the text'
+                        ' begins with \'\\(\\)\'',
                         exc.__str__()):
-                    spec_info = ('Empty rounded brackets are not allowed for atoms with'
+                    spec_info = ('Empty rounded brackets are not'
+                                 ' allowed for atoms with'
                                  ' optional arguments.')
                 raise ValueError(
                     '%sAttribute [%s] parsing error: %s.' %
                     ((("%s " % spec_info) if spec_info else ''),
-                    attr, str(exc).rstrip('.')))
+                     attr, str(exc).rstrip('.')))
 
             attr_name, attr_canon, l_attr = self.validate_attribute(
                 attr, attr_tree, '', None, [])
@@ -1150,10 +1162,6 @@ GemTaxonomy Info
                                    'canonical': tax_canon})
 
     def explain(self, tax_str, fmt='textsingleline'):
-        # try:
         l_attrs, _ = self.validate(tax_str)
-        #except (ValueError, ParsimParseError,
-        #        ParsimIncompleteParseError) as exc:
-        #    return str(exc)
 
         return self.logic_explain(l_attrs, format=fmt)

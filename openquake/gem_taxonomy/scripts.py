@@ -27,7 +27,34 @@ from parsimonious.exceptions import (IncompleteParseError as
 
 
 def info():
-    GemTaxonomy.info()
+    format_default = GemTaxonomy.INFO_OUT_TYPE.TEXT
+    formats_str = ', '.join([
+        ('"%s" (default)' if GemTaxonomy.INFO_OUT_TYPE.DICT[
+            x] == format_default else '"%s"') % x for x in
+        GemTaxonomy.INFO_OUT_TYPE.DICT.keys()])
+
+    parser = argparse.ArgumentParser(
+        description='Info about taxonomy string tools (version 3.3).')
+    parser.add_argument(
+        '-f', '--format',
+        help=formats_str,
+        default=list(
+            GemTaxonomy.INFO_OUT_TYPE.DICT.keys())[
+                list(GemTaxonomy.INFO_OUT_TYPE.DICT.values()).index(
+                    format_default)]
+    )
+    parser.add_argument('-V', '--version', action='version',
+                        version='%s' % __version__,
+                        help='show application version and exit')
+
+    args = parser.parse_args()
+
+    ret = GemTaxonomy.info(fmt=('dict' if args.format == 'json'
+                                else args.format))
+    if args.format == 'json':
+        print(json.dumps(ret))
+    else:
+        print(ret)
 
 
 def validate():
@@ -57,7 +84,7 @@ def validate():
             print(json.dumps(report))
     except (ValueError, ParsimParseError,
             ParsimIncompleteParseError) as exc:
-        print(str(exc))
+        print(str(exc), file=sys.stderr)
         sys.exit(1)
     if args.canonical:
         sys.exit(0 if report['is_canonical'] else 1)
@@ -96,7 +123,8 @@ def explain():
         expl = gt.explain(args.taxonomy_str, fmt=args.format)
     except (ValueError, ParsimParseError,
             ParsimIncompleteParseError) as exc:
-        print(str(exc))
+        print(str(exc), file=sys.stderr)
+
         sys.exit(1)
     print(json.dumps(expl))
     sys.exit(0)
@@ -114,7 +142,8 @@ def csv_validate():
     1          at least one taxonomy string is invalid
 
 note:
-    If some taxonomy string is valid but not in the canonical form a line will be printed in the form:
+    If some taxonomy string is valid but not in the canonical form a
+        line will be printed in the form:
     "filename|row_num|column|original_taxonomy|0|canonical_taxonomy"
 
     If some taxonomy result not valid a line will be printed in the form:
