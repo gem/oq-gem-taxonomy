@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 import re
-import sys
 import json
 import collections
 import builtins
@@ -27,6 +26,15 @@ from parsimonious.exceptions import (IncompleteParseError as
 from openquake.gem_taxonomy_data import GemTaxonomyData
 from openquake.gem_taxonomy_data import __version__ as GTD_vers
 from .version import __version__
+
+#
+#  TODO:
+#
+#    - fix indentaion using proper method instead of direct access
+#         to the variable
+#
+#    - complete code coverage with, possibly, fixtures where required
+#    - remove _NL
 
 _NL = '''
 '''
