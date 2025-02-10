@@ -132,10 +132,8 @@ def explain():
 
 def csv_validate():
     parser = argparse.ArgumentParser(
-        description=(
-            "Validates field[s] of csv file as valid GEM taxonomy string."
-            "Fields are identified with lowercase names or indexes  if '-n'"
-            " optional parameter is specified"),
+        description='''Validates field[s] of csvfile as GEM taxonomy string.
+A config file (-c|--config option) exclusive-or at least one file must be specified.''',
         epilog=(
             '''exit status:
     0          if all taxonomies are valid
@@ -151,24 +149,53 @@ note:
         formatter_class=RawTextHelpFormatter
     )
     parser.add_argument(
-        '-c', '--canonical', action='store_true',
+        '-C', '--canonical', action='store_true',
         help='return 0 if taxonomy strings are all canonical GEM taxonomy'
         ' string only')
     parser.add_argument(
-        '-n', '--numerical', action='store_true',
-        help='fields are indicate by their numerical index')
+        '-c', '--config', nargs='?', default=None,
+        help=('configuration file where each line is'
+              ' [!]<globbing-files>[:field1[:field2[...]]]'))
     parser.add_argument(
-        'csvfile', type=str, help='The CSV file with taxonomy string columns'
-        ' to validate')
-    parser.add_argument(
-        'field', nargs='+',
-        help=("Fields are identified with lowercase names or indexes"
-              " if '-n' optional parameter is specified."))
+        'files_and_cols', type=str, nargs='*', default=None,
+        help='''Files and columns information in the form: \'filename1\' [\'f1col1\' [\'f1col2\' [...]]] [\',\' \'filename2\' [\'f2col1\'] ...]
+filename support globbing expansion internally (use single quote around it to avoid shell to expand it)
+column prefixed with '!' means skip check of this field
+column prefixed with 'N:<int>' means identify the column by it's index
+in the other cases column specify the column name (in a CSV with header)
+if no columns are specified any lowercase column name equal to 'taxonomy' will be checked
+',' use comma to separate two different filenames descriptions''')
     parser.add_argument('-V', '--version', action='version',
                         version='%s' % __version__,
                         help='show application version and exit')
 
     args = parser.parse_args()
+
+    if bool(args.config is None) == bool(not args.files_and_cols):
+        parser.print_help()
+        sys.exit(1)
+
+    files2check = []
+    files2skip = []
+    cols4files = {}
+    if args.config:
+        fconf = open(args.config)
+        for line in fconf:
+            csv_reader = csv.reader( [ line ] )
+            fields = None
+            for row in csv_reader:
+                fields = row
+            if len(fields) < 1:
+                continue
+            if fields[0][0] == '#':
+                continue
+            if fields[0][0] == '!':
+                files2skip.append(fields[0][1:])
+            else:
+                files2check.append(fields[0])
+                cols4files[fields[0]] = fields[1:]
+    import pdb ; pdb.set_trace()
+    sys.exit(123)
 
     gt = GemTaxonomy()
 
