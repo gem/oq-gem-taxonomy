@@ -18,6 +18,7 @@
 import sys
 import csv
 import json
+import glob
 import argparse
 from argparse import RawTextHelpFormatter
 from openquake.gem_taxonomy import GemTaxonomy, __version__
@@ -181,7 +182,8 @@ if no columns are specified any lowercase column name equal to 'taxonomy' will b
     if args.config:
         fconf = open(args.config)
         for line in fconf:
-            csv_reader = csv.reader( [ line ] )
+            print('LINE: %s' % line)
+            csv_reader = csv.reader([line])
             fields = None
             for row in csv_reader:
                 fields = row
@@ -190,11 +192,34 @@ if no columns are specified any lowercase column name equal to 'taxonomy' will b
             if fields[0][0] == '#':
                 continue
             if fields[0][0] == '!':
-                files2skip.append(fields[0][1:])
+                files2skip.extend(glob.glob(fields[0][1:]))
             else:
-                files2check.append(fields[0])
-                cols4files[fields[0]] = fields[1:]
-    import pdb ; pdb.set_trace()
+                filenames = glob.glob(fields[0])
+                for filename in filenames:
+                    files2check.append(filename)
+                    col_info = {
+                        'skip': [],
+                        'skip_n': [],
+                        'check': [],
+                        'check_n': []
+                    }
+                    cols4files[filename] = col_info
+                    for field in fields[1:]:
+                        if field[0] == '!':
+                            if field[1:3] == 'N:':
+                                col_info['skip_n'].append(
+                                    int(field[3:]))
+                            else:
+                                col_info['skip'].append(
+                                    field[1:])
+                        else:
+                            if field[0:2] == 'N:':
+                                col_info['check_n'].append(
+                                    int(field[2:]))
+                            else:
+                                col_info['check'].append(
+                                    field)
+    import pdb; pdb.set_trace()
     sys.exit(123)
 
     gt = GemTaxonomy()
