@@ -157,7 +157,8 @@ def parse_conf_rows(files2check, cols4files, conf_rows):
                     col_info = {
                         'header_rows': 1,
                         'check': [],
-                        'check_n': []
+                        'check_n': [],
+                        'n_map': {},
                     }
                     if len(conf_row) > 1:
                         col_info['header_rows'] = int(conf_row[1])
@@ -177,6 +178,16 @@ def parse_conf_rows(files2check, cols4files, conf_rows):
 
                                 col_info['check'].append(
                                     field)
+                    elif len(conf_row) <= 2 and col_info['header_rows'] > 0:
+                        # as default, if there is an header 'taxonomý' and
+                        # 'TAXONOMY' are searched as taxonomy fields
+                        col_info['check'].append('taxonomy')
+                        col_info['check'].append('TAXONOMY')
+                    else:
+                        raise ValueError(
+                            'misconfiguration for file \'%s\''
+                            ', no header rows present and no column indexes'
+                            ' are specified.' % filename)
 
                     cols4files[filename] = col_info
 
@@ -257,7 +268,7 @@ note:
         parse_conf_rows(files2check, cols4files, conf_rows)
 
     if args.debug:
-        print('AFTER CONFIG')
+        print('\nAFTER CONFIG')
         print("files2check")
         pprint(files2check)
         print("cols4files")
@@ -278,56 +289,54 @@ note:
         parse_conf_rows(files2check, cols4files, conf_rows)
 
     if args.debug:
-        print('AFTER ARGS')
+        print('\nAFTER ARGS')
         print("files2check")
         pprint(files2check)
         print("cols4files")
         pprint(cols4files)
 
-    #    import pdb; pdb.set_trace()
-    sys.exit(123)
-
     gt = GemTaxonomy()
 
-    for fname in files2check:
-        print('===== %s =====' % fname)
-        taxonomy_cols = []
-        name_cols = {}
-        with open(fname) as csvfile:
+    ret_code = 0
+    for filename in files2check:
+        cols4file = cols4files[filename]
+        print('===== %s =====' % filename)
+        with open(filename) as csvfile:
             csvreader = csv.reader(csvfile)
-            if args.numerical:
-                taxonomy_cols = [int(idx) for idx in args.field]
-            else:
-                header = next(csvreader)
-                for col, fieldname in enumerate(header):
-                    if fieldname.lower() in args.field:
-                        taxonomy_cols.append(col)
-                        name_cols[col] = fieldname
-                if len(taxonomy_cols) == 0:
-                    print("No header fieldnames match fields passed as arguments",
-                          file=sys.stderr)
+            last_header = None
+            for header in range(0, cols4file['header_rows']):
+                last_header = next(csvreader, None)
+            if last_header:
+                for col2check in cols4file['check']:
+                    idx = last_header.index(col2check)
+                    cols4file['check_n'].append(idx)
+                    cols4file['n_map'][idx] = col2check
 
-            ret_code = 0
-            for idx, row in enumerate(csvreader):
-                for col in taxonomy_cols:
+            if args.debug:
+                print("\nBEFORE CSV LOOP")
+                pprint(cols4files)
+
+            for row_idx, row in enumerate(csvreader,
+                                          start=cols4file['header_rows']):
+                for col in cols4file['check_n']:
                     tax = row[col]
                     try:
-                        report = gt.validate(tax)
+                        _, report = gt.validate(tax)
                         if report['is_canonical'] is False:
                             print('%s|%d|%s|%s|%d|%s' % (
-                                args.csvfile, idx, col, tax, 0,
+                                args.csvfile, row_idx,
+                                (col if col not in cols4file['n_map']
+                                 else cols4file['n_map'][col]), tax, 0,
                                 report['canonical']))
                             if args.canonical is True:
                                 ret_code = 1
                     except (ValueError, ParsimParseError,
                             ParsimIncompleteParseError) as exc:
                         ret_code = 1
-                        if args.numerical:
-                            print('%s|%d|%s|%s|%d|%s' % (
-                                args.csvfile, idx, col, tax, 1,
-                                str(exc)))
-                        else:
-                            print('%s|%d|%s|%s|%d|%s' % (
-                                args.csvfile, idx, name_cols[col], tax, 1,
-                                str(exc)))
-            sys.exit(ret_code)
+                        print('%s|%d|%s|%s|%d|%s' % (
+                            filename, row_idx,
+                            (col if col not in cols4file['n_map']
+                             else cols4file['n_map'][col]),
+                            tax, 1, str(exc)))
+
+    sys.exit(ret_code)
