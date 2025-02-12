@@ -131,10 +131,61 @@ def explain():
     sys.exit(0)
 
 
+def parse_conf_rows(files2check, cols4files, conf_rows):
+    for is_load in (True, False):
+        for conf_row in conf_rows:
+            if len(conf_row) < 1:
+                continue
+            if conf_row[0][0] == '#':
+                continue
+
+            if (conf_row[0][0] != '!') != is_load:
+                continue
+
+            if conf_row[0][0] == '!':
+                del_list = glob.glob(conf_row[0][1:])
+                for del_item in del_list:
+                    try:
+                        files2check.remove(del_item)
+                        del cols4files[del_item]
+                    except ValueError:
+                        pass
+            else:
+                filenames = glob.glob(conf_row[0])
+                for filename in filenames:
+                    files2check.append(filename)
+                    col_info = {
+                        'header_rows': 1,
+                        'check': [],
+                        'check_n': []
+                    }
+                    if len(conf_row) > 1:
+                        col_info['header_rows'] = int(conf_row[1])
+                    if len(conf_row) > 2:
+                        for field in conf_row[2:]:
+                            if field[0:2] == 'N:':
+                                col_info['check_n'].append(
+                                    int(field[2:]))
+                            else:
+                                if col_info['header_rows'] == 0:
+                                    raise ValueError(
+                                        'misconfiguration for file \'%s\''
+                                        ', headers rows number is set to 0 but'
+                                        ' column named \'%s\' is defined'
+                                        ' instead of an index.' % (
+                                            filename, field))
+
+                                col_info['check'].append(
+                                    field)
+
+                    cols4files[filename] = col_info
+
+
 def csv_validate():
     parser = argparse.ArgumentParser(
         description='''Validates field[s] of csvfile as GEM taxonomy string.
-A config file (-c|--config option) exclusive-or at least one file must be specified.''',
+A config file (-c|--config option) and/or at least one file must be specified.
+''',
         epilog=(
             '''exit status:
     0          if all taxonomies are valid
@@ -154,113 +205,129 @@ note:
         help='return 0 if taxonomy strings are all canonical GEM taxonomy'
         ' string only')
     parser.add_argument(
+        '-d', '--debug', action='store_true',
+        help='enable informations to debug the script and configuration file')
+    parser.add_argument(
         '-c', '--config', nargs='?', default=None,
         help=('configuration file where each line is'
               ' [!]<globbing-files>[:field1[:field2[...]]]'))
     parser.add_argument(
         'files_and_cols', type=str, nargs='*', default=None,
-        help='''Files and columns information in the form: \'filename1\' [\'f1col1\' [\'f1col2\' [...]]] [\',\' \'filename2\' [\'f2col1\'] ...]
-filename support globbing expansion internally (use single quote around it to avoid shell to expand it)
-column prefixed with '!' means skip check of this field
-column prefixed with 'N:<int>' means identify the column by it's index
-in the other cases column specify the column name (in a CSV with header)
-if no columns are specified any lowercase column name equal to 'taxonomy' will be checked
-',' use comma to separate two different filenames descriptions''')
+        help=(
+            'Files and columns information in the form: \'filename1\''
+            ' [<headers_N_of_rows> [\'f1col1\' [\'f1col2\' [...]]]] [\',\'',
+            '\'filename2\' [<headers_N_of_rows> [\'f2col1\'] [...]]]]\n'
+            'filename support globbing expansion internally (use single'
+            ' quote around it to avoid shell to expand it)\n'
+            'column prefixed with \'N:<int>\' means identify the column by'
+            ' it\'s index\n'
+            'in the other cases column specify the column name (in a CSV with'
+            ' header)\n'
+            'if no columns are specified any lowercase column name equal to'
+            ' \'taxonomy\' will be checked\n'
+            '\',\' use comma to separate two different filenames descriptions')
+        )
     parser.add_argument('-V', '--version', action='version',
                         version='%s' % __version__,
                         help='show application version and exit')
 
     args = parser.parse_args()
 
-    if bool(args.config is None) == bool(not args.files_and_cols):
+    if args.debug:
+        from pprint import pprint
+
+    if args.config is None and (not args.files_and_cols):
         parser.print_help()
         sys.exit(1)
 
     files2check = []
-    files2skip = []
     cols4files = {}
+
     if args.config:
+        conf_rows = []
         fconf = open(args.config)
         for line in fconf:
-            print('LINE: %s' % line)
             csv_reader = csv.reader([line])
-            fields = None
             for row in csv_reader:
-                fields = row
-            if len(fields) < 1:
-                continue
-            if fields[0][0] == '#':
-                continue
-            if fields[0][0] == '!':
-                files2skip.extend(glob.glob(fields[0][1:]))
+                conf_row = []
+                for field in row:
+                    conf_row.append(field)
+            conf_rows.append(conf_row)
+
+        parse_conf_rows(files2check, cols4files, conf_rows)
+
+    if args.debug:
+        print('AFTER CONFIG')
+        print("files2check")
+        pprint(files2check)
+        print("cols4files")
+        pprint(cols4files)
+
+    if args.files_and_cols:
+        conf_rows = []
+        is_first = True
+        for item in args.files_and_cols:
+            if is_first:
+                conf_row = [item]
+                conf_rows.append(conf_row)
+                is_first = False
+            elif item == ',':
+                is_first = True
             else:
-                filenames = glob.glob(fields[0])
-                for filename in filenames:
-                    files2check.append(filename)
-                    col_info = {
-                        'skip': [],
-                        'skip_n': [],
-                        'check': [],
-                        'check_n': []
-                    }
-                    cols4files[filename] = col_info
-                    for field in fields[1:]:
-                        if field[0] == '!':
-                            if field[1:3] == 'N:':
-                                col_info['skip_n'].append(
-                                    int(field[3:]))
-                            else:
-                                col_info['skip'].append(
-                                    field[1:])
-                        else:
-                            if field[0:2] == 'N:':
-                                col_info['check_n'].append(
-                                    int(field[2:]))
-                            else:
-                                col_info['check'].append(
-                                    field)
-    import pdb; pdb.set_trace()
+                conf_row.append(item)
+        parse_conf_rows(files2check, cols4files, conf_rows)
+
+    if args.debug:
+        print('AFTER ARGS')
+        print("files2check")
+        pprint(files2check)
+        print("cols4files")
+        pprint(cols4files)
+
+    #    import pdb; pdb.set_trace()
     sys.exit(123)
 
     gt = GemTaxonomy()
 
-    taxonomy_cols = []
-    name_cols = {}
-    with open(args.csvfile) as csvfile:
-        csvreader = csv.reader(csvfile)
-        if args.numerical:
-            taxonomy_cols = [int(idx) for idx in args.field]
-        else:
-            header = next(csvreader)
-            for col, fieldname in enumerate(header):
-                if fieldname.lower() in args.field:
-                    taxonomy_cols.append(col)
-                    name_cols[col] = fieldname
-            if len(taxonomy_cols) == 0:
-                print("No header fieldnames match fields passed as arguments",
-                      file=sys.stderr)
+    for fname in files2check:
+        print('===== %s =====' % fname)
+        taxonomy_cols = []
+        name_cols = {}
+        with open(fname) as csvfile:
+            csvreader = csv.reader(csvfile)
+            if args.numerical:
+                taxonomy_cols = [int(idx) for idx in args.field]
+            else:
+                header = next(csvreader)
+                for col, fieldname in enumerate(header):
+                    if fieldname.lower() in args.field:
+                        taxonomy_cols.append(col)
+                        name_cols[col] = fieldname
+                if len(taxonomy_cols) == 0:
+                    print("No header fieldnames match fields passed as arguments",
+                          file=sys.stderr)
 
-        ret_code = 0
-        for idx, row in enumerate(csvreader):
-            for col in taxonomy_cols:
-                tax = row[col]
-                try:
-                    report = gt.validate(tax)
-                    if report['is_canonical'] is False:
-                        print('%s|%d|%s|%s|%d|%s' % (
-                            args.csvfile, idx, col, tax, 0,
-                            report['canonical']))
-                        if args.canonical is True:
-                            ret_code = 1
-                except (ValueError, ParsimParseError,
-                        ParsimIncompleteParseError) as exc:
-                    ret_code = 1
-                    if args.numerical:
-                        print('%s|%d|%s|%s|%d|%s' % (
-                            args.csvfile, idx, col, tax, 1,
-                            str(exc)))
-                    else:
-                        print('%s|%d|%s|%s|%d|%s' % (
-                            args.csvfile, idx, name_cols[col], tax, 1,
-                            str(exc)))
-        sys.exit(ret_code)
+            ret_code = 0
+            for idx, row in enumerate(csvreader):
+                for col in taxonomy_cols:
+                    tax = row[col]
+                    try:
+                        report = gt.validate(tax)
+                        if report['is_canonical'] is False:
+                            print('%s|%d|%s|%s|%d|%s' % (
+                                args.csvfile, idx, col, tax, 0,
+                                report['canonical']))
+                            if args.canonical is True:
+                                ret_code = 1
+                    except (ValueError, ParsimParseError,
+                            ParsimIncompleteParseError) as exc:
+                        ret_code = 1
+                        if args.numerical:
+                            print('%s|%d|%s|%s|%d|%s' % (
+                                args.csvfile, idx, col, tax, 1,
+                                str(exc)))
+                        else:
+                            print('%s|%d|%s|%s|%d|%s' % (
+                                args.csvfile, idx, name_cols[col], tax, 1,
+                                str(exc)))
+            sys.exit(ret_code)
