@@ -271,11 +271,11 @@ note:
         parse_conf_rows(files2check, cols4files, conf_rows)
 
     if args.debug:
-        print('\nAFTER CONFIG')
-        print("files2check")
-        pprint(files2check)
-        print("cols4files")
-        pprint(cols4files)
+        print('\nAFTER CONFIG', file=sys.stderr)
+        print("files2check", file=sys.stderr)
+        pprint(files2check, stream=sys.stderr)
+        print("cols4files", file=sys.stderr)
+        pprint(cols4files, stream=sys.stderr)
 
     if args.files_and_cols:
         conf_rows = []
@@ -292,16 +292,18 @@ note:
         parse_conf_rows(files2check, cols4files, conf_rows)
 
     if args.debug:
-        print('\nAFTER ARGS')
-        print("files2check")
-        pprint(files2check)
-        print("cols4files")
-        pprint(cols4files)
+        print('\nAFTER ARGS', file=sys.stderr)
+        print("files2check", file=sys.stderr)
+        pprint(files2check, stream=sys.stderr)
+        print("cols4files", file=sys.stderr)
+        pprint(cols4files, stream=sys.stderr)
 
     gt = GemTaxonomy()
 
     ret_code = 0
     for filename in files2check:
+        if args.verbose:
+            print('csv_validate: %s' % filename, file=sys.stderr)
         cols4file = cols4files[filename]
         with open(filename) as csvfile:
             csvreader = csv.reader(csvfile)
@@ -315,14 +317,15 @@ note:
                         cols4file['check_n'].append(idx)
                         cols4file['n_map'][idx] = col2check
                     except ValueError as exc:
-                        if args.verbose:
+                        if args.debug:
                             print(
-                                'For file \'%s\' column \'%s\' not found',
+                                'For file \'%s\' column \'%s\' not found' % (
+                                    filename, col2check),
                                 file=sys.stderr)
                         continue
             if args.debug:
-                print("\nBEFORE CSV LOOP")
-                pprint(cols4files)
+                print("\nBEFORE CSV LOOP", file=sys.stderr)
+                pprint(cols4files, stream=sys.stderr)
 
             for row_idx, row in enumerate(csvreader,
                                           start=cols4file['header_rows']):
