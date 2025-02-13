@@ -219,6 +219,9 @@ note:
         '-d', '--debug', action='store_true',
         help='enable informations to debug the script and configuration file')
     parser.add_argument(
+        '-v', '--verbose', action='store_true',
+        help='increase verbosity')
+    parser.add_argument(
         '-c', '--config', nargs='?', default=None,
         help=('configuration file where each line is'
               ' [!]<globbing-files>[:field1[:field2[...]]]'))
@@ -300,7 +303,6 @@ note:
     ret_code = 0
     for filename in files2check:
         cols4file = cols4files[filename]
-        print('===== %s =====' % filename)
         with open(filename) as csvfile:
             csvreader = csv.reader(csvfile)
             last_header = None
@@ -308,10 +310,16 @@ note:
                 last_header = next(csvreader, None)
             if last_header:
                 for col2check in cols4file['check']:
-                    idx = last_header.index(col2check)
-                    cols4file['check_n'].append(idx)
-                    cols4file['n_map'][idx] = col2check
-
+                    try:
+                        idx = last_header.index(col2check)
+                        cols4file['check_n'].append(idx)
+                        cols4file['n_map'][idx] = col2check
+                    except ValueError as exc:
+                        if args.verbose:
+                            print(
+                                'For file \'%s\' column \'%s\' not found',
+                                file=sys.stderr)
+                        continue
             if args.debug:
                 print("\nBEFORE CSV LOOP")
                 pprint(cols4files)
