@@ -331,7 +331,7 @@ note:
                 print('  check cols: %s' % ', '.join([
                     (cols4file['n_map'][col] if col in
                      cols4file['n_map'] else col)
-                    for col in cols4file['check_n']]))
+                    for col in cols4file['check_n']]), file=sys.stderr)
             for row_idx, row in enumerate(csvreader,
                                           start=cols4file['header_rows']):
                 for col in cols4file['check_n']:
