@@ -15,11 +15,13 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
+import os
 import sys
 import csv
 import json
 import glob
 import argparse
+import subprocess
 from argparse import RawTextHelpFormatter
 from openquake.gem_taxonomy import GemTaxonomy, __version__
 from parsimonious.exceptions import ParseError as ParsimParseError
@@ -192,6 +194,18 @@ def parse_conf_rows(files2check, cols4files, conf_rows):
                     cols4files[filename] = col_info
 
 
+def _sniff_lineterm(fin):
+    first_row = fin.readline()
+    if first_row.endswith('\r\n'):
+        ret = '\r\n'
+    elif first_row.endswith('\r'):
+        ret = '\r'
+    elif first_row.endswith('\n'):
+        ret = '\n'
+    fin.seek(0)
+    return ret
+
+
 def csv_validate():
     parser = argparse.ArgumentParser(
         description='''Validates field[s] of csvfile as GEM taxonomy string.
@@ -225,6 +239,10 @@ note:
         '-c', '--config', nargs='?', default=None,
         help=('configuration file where each line is'
               ' [!]<globbing-files>[:field1[:field2[...]]]'))
+    parser.add_argument(
+        '-s', '--sanitize', nargs='?', default=None,
+        help=('try to sanitize non compliant column elements via an external'
+              ' command (bufferized results will bi used)'))
     parser.add_argument(
         'files_and_cols', type=str, nargs='*', default=None,
         help=(
@@ -300,16 +318,31 @@ note:
 
     gt = GemTaxonomy()
 
+    if args.sanitize:
+        sani_proc = subprocess.Popen([args.sanitize],
+                                     stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE,
+                                     universal_newlines=True)
+        sani_cache = {}
+
     ret_code = 0
     for filename in files2check:
         if args.verbose:
             print('csv_validate: %s' % filename, file=sys.stderr)
         cols4file = cols4files[filename]
         with open(filename) as csvfile:
+            if args.sanitize:
+                lineterm = _sniff_lineterm(csvfile)
+                filename_out = "%s.taxs" % filename
+                fout = open(filename_out, 'w')
+                csvwriter = csv.writer(fout, lineterminator=lineterm)
+
             csvreader = csv.reader(csvfile)
             last_header = None
             for header in range(0, cols4file['header_rows']):
                 last_header = next(csvreader, None)
+                if args.sanitize:
+                    csvwriter.writerow(last_header)
             if last_header:
                 for col2check in cols4file['check']:
                     try:
@@ -334,6 +367,8 @@ note:
                     for col in cols4file['check_n']]), file=sys.stderr)
             for row_idx, row in enumerate(csvreader,
                                           start=cols4file['header_rows']):
+                if args.sanitize:
+                    row_out = row[:]
                 for col in cols4file['check_n']:
                     tax = row[col]
                     try:
@@ -354,5 +389,24 @@ note:
                             (col if col not in cols4file['n_map']
                              else cols4file['n_map'][col]),
                             tax, 1, str(exc)))
+                        if args.sanitize:
+                            if tax not in sani_cache:
+                                sani_proc.stdin.write(tax + '\n')
+                                sani_proc.stdin.flush()
+                                tax_new = sani_proc.stdout.readline().strip()
+
+                                sani_cache[tax] = tax_new
+
+                            row_out[col] = sani_cache[tax]
+                if args.sanitize:
+                    csvwriter.writerow(row_out)
+
+    if args.sanitize:
+        fout.close()
+        sani_proc.terminate()
+        sani_proc.wait()
+
+        for filename in files2check:
+            os.rename('%s.taxs' % filename, filename)
 
     sys.exit(ret_code)
