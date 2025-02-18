@@ -381,6 +381,8 @@ note:
                                 report['canonical']))
                             if args.canonical is True:
                                 ret_code = 1
+                            if args.sanitize:
+                                row_out[col] = report['canonical']
                     except (ValueError, ParsimParseError,
                             ParsimIncompleteParseError) as exc:
                         ret_code = 1
