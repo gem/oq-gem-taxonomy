@@ -242,7 +242,7 @@ note:
     parser.add_argument(
         '-s', '--sanitize', nargs='?', default=None,
         help=('try to sanitize non compliant column elements via an external'
-              ' command (bufferized results will bi used)'))
+              ' command (bufferized results will be used)'))
     parser.add_argument(
         'files_and_cols', type=str, nargs='*', default=None,
         help=(
@@ -330,7 +330,7 @@ note:
         if args.verbose:
             print('csv_validate: %s' % filename, file=sys.stderr)
         cols4file = cols4files[filename]
-        with open(filename) as csvfile:
+        with open(filename, newline='') as csvfile:
             if args.sanitize:
                 lineterm = _sniff_lineterm(csvfile)
                 filename_out = "%s.taxs" % filename
