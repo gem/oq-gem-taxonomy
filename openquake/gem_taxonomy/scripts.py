@@ -375,7 +375,7 @@ note:
                         _, report = gt.validate(tax)
                         if report['is_canonical'] is False:
                             print('%s|%d|%s|%s|%d|%s' % (
-                                args.csvfile, row_idx,
+                                filename, row_idx,
                                 (col if col not in cols4file['n_map']
                                  else cols4file['n_map'][col]), tax, 0,
                                 report['canonical']))
