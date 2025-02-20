@@ -207,6 +207,7 @@ def _sniff_lineterm(fin):
 
 
 def csv_validate():
+    PREPROC_SAFETY_FILE = 'PREPROCESS_SAFETY_FILE.run-once'
     parser = argparse.ArgumentParser(
         description='''Validates field[s] of csvfile as GEM taxonomy string.
 A config file (-c|--config option) and/or at least one file must be specified.
@@ -236,13 +237,19 @@ note:
         '-v', '--verbose', action='store_true',
         help='increase verbosity')
     parser.add_argument(
-        '-c', '--config', nargs='?', default=None,
+        '-c', '--config', nargs=1, default=None,
         help=('configuration file where each line is'
               ' [!]<globbing-files>[:field1[:field2[...]]]'))
     parser.add_argument(
-        '-s', '--sanitize', nargs='?', default=None,
+        '-s', '--sanitize', nargs=1, default=None,
         help=('try to sanitize non compliant column elements via an external'
               ' command (bufferized results will be used)'))
+    parser.add_argument(
+        '-p', '--preprocess', nargs=1, default=None,
+        help=('try to modify each column element via an external command, '
+              'to avoid to run two times cousing destructive changes local'
+              ' existence of a safety file (%s) is required (and removed by'
+              ' the script itself' % PREPROC_SAFETY_FILE))
     parser.add_argument(
         'files_and_cols', type=str, nargs='*', default=None,
         help=(
@@ -265,6 +272,17 @@ note:
 
     args = parser.parse_args()
 
+    if args.preprocess:
+        if os.path.isfile(PREPROC_SAFETY_FILE):
+            os.remove(PREPROC_SAFETY_FILE)
+        else:
+            print(
+                'Preprocess option enabled but "%s" file doesn\'t exists, '
+                'create it and run again the command to perform '
+                'preprocessing ("%s" file will be deleted by the command)' %
+                (PREPROC_SAFETY_FILE, PREPROC_SAFETY_FILE), file=sys.stderr)
+            sys.exit(2)
+
     if args.debug:
         from pprint import pprint
 
@@ -277,7 +295,7 @@ note:
 
     if args.config:
         conf_rows = []
-        fconf = open(args.config)
+        fconf = open(args.config[0])
         for line in fconf:
             csv_reader = csv.reader([line])
             for row in csv_reader:
@@ -318,8 +336,14 @@ note:
 
     gt = GemTaxonomy()
 
+    if args.preprocess:
+        prep_proc = subprocess.Popen([args.preprocess[0]],
+                                     stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE,
+                                     universal_newlines=True)
+
     if args.sanitize:
-        sani_proc = subprocess.Popen([args.sanitize],
+        sani_proc = subprocess.Popen([args.sanitize[0]],
                                      stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      universal_newlines=True)
@@ -331,7 +355,7 @@ note:
             print('csv_validate: %s' % filename, file=sys.stderr)
         cols4file = cols4files[filename]
         with open(filename, newline='') as csvfile:
-            if args.sanitize:
+            if args.preprocess or args.sanitize:
                 lineterm = _sniff_lineterm(csvfile)
                 filename_out = "%s.taxs" % filename
                 fout = open(filename_out, 'w')
@@ -341,7 +365,7 @@ note:
             last_header = None
             for header in range(0, cols4file['header_rows']):
                 last_header = next(csvreader, None)
-                if args.sanitize:
+                if args.preprocess or args.sanitize:
                     csvwriter.writerow(last_header)
             if last_header:
                 for col2check in cols4file['check']:
@@ -367,10 +391,16 @@ note:
                     for col in cols4file['check_n']]), file=sys.stderr)
             for row_idx, row in enumerate(csvreader,
                                           start=cols4file['header_rows']):
-                if args.sanitize:
+                if args.preprocess or args.sanitize:
                     row_out = row[:]
                 for col in cols4file['check_n']:
-                    tax = row[col]
+                    if args.preprocess:
+                        prep_proc.stdin.write(row[col] + '\n')
+                        prep_proc.stdin.flush()
+                        tax = prep_proc.stdout.readline().strip()
+                        row_out[col] = tax
+                    else:
+                        tax = row[col]
                     try:
                         _, report = gt.validate(tax)
                         if report['is_canonical'] is False:
@@ -403,12 +433,16 @@ note:
                 if args.sanitize:
                     csvwriter.writerow(row_out)
 
+        if args.preprocess or args.sanitize:
+            fout.close()
+            os.rename('%s.taxs' % filename, filename)
+
+    if args.preprocess:
+        prep_proc.terminate()
+        prep_proc.wait()
+
     if args.sanitize:
-        fout.close()
         sani_proc.terminate()
         sani_proc.wait()
-
-        for filename in files2check:
-            os.rename('%s.taxs' % filename, filename)
 
     sys.exit(ret_code)
