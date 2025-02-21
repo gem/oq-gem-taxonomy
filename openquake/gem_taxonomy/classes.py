@@ -968,7 +968,7 @@ class GemTaxonomy:
                     ' already present with member [%s],'
                     ' new atom [%s] not allowed.' %
                     (attr, self.tax['AtomsGroupDict'][
-                        tax_atom['group']]['desc'],
+                        tax_atom['group']]['title'],
                      [x for x in atoms_group_name][0],
                      atom_name))
 
