@@ -1,5 +1,6 @@
 /ETAGS
 /venv*
+/.coverage
 /dist/
 /build/
 /examples/

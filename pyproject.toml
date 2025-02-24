@@ -7,7 +7,7 @@ name = "openquake.gem-taxonomy"
 dynamic = ["version"]
 
 dependencies = [
-   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git@v1.0.4",
+   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git@v1.2.0",
    "parsimonious == 0.10.0"
 ]
 
