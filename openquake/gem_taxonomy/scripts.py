@@ -254,7 +254,7 @@ note:
         'files_and_cols', type=str, nargs='*', default=None,
         help=(
             'Files and columns information in the form: \'filename1\''
-            ' [<headers_N_of_rows> [\'f1col1\' [\'f1col2\' [...]]]] [\',\'',
+            ' [<headers_N_of_rows> [\'f1col1\' [\'f1col2\' [...]]]] [\',\''
             '\'filename2\' [<headers_N_of_rows> [\'f2col1\'] [...]]]]\n'
             'filename support globbing expansion internally (use single'
             ' quote around it to avoid shell to expand it)\n'
@@ -354,7 +354,7 @@ note:
         if args.verbose:
             print('csv_validate: %s' % filename, file=sys.stderr)
         cols4file = cols4files[filename]
-        with open(filename, newline='') as csvfile:
+        with open(filename, newline='', encoding='utf-8-sig') as csvfile:
             if args.preprocess or args.sanitize:
                 lineterm = _sniff_lineterm(csvfile)
                 filename_out = "%s.taxs" % filename
