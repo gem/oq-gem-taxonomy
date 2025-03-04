@@ -112,14 +112,14 @@ class GemTaxonomy:
             ret = []
             for attr in attrs:
                 ret.append(attr.explain(output_type=output_type))
-            return ret
+            return output_type, ret
         else:
             self.LogicIndSet(0)
             s = ''
             for attr in attrs:
                 s += attr.explain(output_type=output_type)
 
-            return s
+            return output_type, s
 
     class LogicAttribute:
         def __init__(self, paself, attribute, atoms):
@@ -692,30 +692,31 @@ class GemTaxonomy:
         atom_anc = atom_tree.text
         atom_name = atom_tree.children[0].text
         if param_type_name == 'options':
-            if atom_name not in self.tax['Param']:
-                raise ValueError(
-                    'Atom [%s]: parameters options not found.' %
-                    (atom_anc,))
-            atom_options = self.tax['Param'][atom_name]
-            if len(atom_params) > 1:
-                raise ValueError(
-                    'Atom [%s]: multiple parameters options not supported.' %
-                    (atom_anc,))
-            for atom_param_idx, atom_param in enumerate(atom_params):
-                atom_param_key = ':'.join(atom_params[0:(
-                    atom_param_idx + 1)])
-                atom_option_list = list(filter(
-                    lambda option: option['name'] == atom_param_key,
-                    atom_options))
-                if (len(atom_option_list) < 1):
+            if tax_params['params_max'] > 0 and len(atom_params) > 0:
+                if atom_name not in self.tax['Param']:
                     raise ValueError(
-                        'Atom [%s]: parameters option [%s] not found.' %
-                        (atom_anc, atom_param_key))
-                l_params.append(self.LogicParam(
-                    self, atom_name, self.LogicParam.TYPE_OPTION,
-                    self.LogicParam.SUBTYPE_NONE,
-                    atom_option_list[0]['title'],
-                    atom_param, ''))
+                        'Atom [%s]: parameters options not found.' %
+                        (atom_anc,))
+                atom_options = self.tax['Param'][atom_name]
+                if len(atom_params) > 1:
+                    raise ValueError(
+                        'Atom [%s]: multiple parameters options'
+                        ' not supported.' % (atom_anc,))
+                for atom_param_idx, atom_param in enumerate(atom_params):
+                    atom_param_key = ':'.join(atom_params[0:(
+                        atom_param_idx + 1)])
+                    atom_option_list = list(filter(
+                        lambda option: option['name'] == atom_param_key,
+                        atom_options))
+                    if (len(atom_option_list) < 1):
+                        raise ValueError(
+                            'Atom [%s]: parameters option [%s] not found.' %
+                            (atom_anc, atom_param_key))
+                    l_params.append(self.LogicParam(
+                        self, atom_name, self.LogicParam.TYPE_OPTION,
+                        self.LogicParam.SUBTYPE_NONE,
+                        atom_option_list[0]['title'],
+                        atom_param, ''))
         elif param_type_name == 'float' or param_type_name == 'int':
             for atom_param in atom_params:
                 self.check_single_value(atom_anc, param_type_name,
@@ -1173,3 +1174,12 @@ class GemTaxonomy:
         l_attrs, _ = self.validate(tax_str)
 
         return self.logic_explain(l_attrs, format=fmt)
+
+    def dump_explain(self, fmt, expl):
+        if fmt in [GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE,
+                   GemTaxonomy.EXPL_OUT_TYPE.MULTILINE]:
+            print(expl)
+        elif fmt in [GemTaxonomy.EXPL_OUT_TYPE.JSON]:
+            print(json.dumps(expl))
+        else:
+            raise ValueError('Unknown explain format %d' % fmt)

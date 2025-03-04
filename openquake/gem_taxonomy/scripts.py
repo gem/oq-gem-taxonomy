@@ -123,13 +123,14 @@ def explain():
     gt = GemTaxonomy()
 
     try:
-        expl = gt.explain(args.taxonomy_str, fmt=args.format)
+        fmt, expl = gt.explain(args.taxonomy_str, fmt=args.format)
     except (ValueError, ParsimParseError,
             ParsimIncompleteParseError) as exc:
         print(str(exc), file=sys.stderr)
-
         sys.exit(1)
-    print(json.dumps(expl))
+
+    gt.dump_explain(fmt, expl)
+
     sys.exit(0)
 
 

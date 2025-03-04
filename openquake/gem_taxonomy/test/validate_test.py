@@ -141,6 +141,8 @@ taxonomy_strings = [
      ' entirety, but it didn\'t consume all the text. The non-matching portion'
      ' of the text begins with \'()\' (line 1, column 2).'),
 
+    ('RES', None, None, '<ATTR id="0xADDR" name="occupancy">\n'
+     '    <ATOM id="0xADDR" name="RES" title="Residential"/>\n</ATTR>\n'),
     ('RES:2', None, None, '<ATTR id="0xADDR" name="occupancy">\n'
      '    <ATOM id="0xADDR" name="RES" title="Residential">\n'
      '        <params>\n            <param subtype="none" title="Multi-unit,'
