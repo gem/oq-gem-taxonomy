@@ -246,6 +246,11 @@ note:
         help=('try to sanitize non compliant column elements via an external'
               ' command (bufferized results will be used)'))
     parser.add_argument(
+        '-S', '--subfield', nargs=2, metavar=('SEPARATOR', 'INDEX'),
+        default=None, help=(
+            'if field SEPARATOR is present try to split the field and get'
+            ' the INDEX-nt sub-element as taxonomy string'))
+    parser.add_argument(
         '-p', '--preprocess', nargs=1, default=None,
         help=('try to modify each column element via an external command, '
               'to avoid to run two times cousing destructive changes local'
@@ -402,6 +407,12 @@ note:
                         row_out[col] = tax
                     else:
                         tax = row[col]
+
+                    tax_list = None
+                    if args.subfield:
+                        if tax.find(args.subfield[0]):
+                            tax_list = tax.split(args.subfield[0])
+                            tax = tax_list[int(args.subfield[1])]
                     try:
                         _, report = gt.validate(tax)
                         if report['is_canonical'] is False:
@@ -413,7 +424,13 @@ note:
                             if args.canonical is True:
                                 ret_code = 1
                             if args.sanitize:
-                                row_out[col] = report['canonical']
+                                if tax_list:
+                                    tax_list[int(args.subfield[1])] = report[
+                                        'canonical']
+                                    row_out[col] = args.subfield[0].join(
+                                        tax_list)
+                                else:
+                                    row_out[col] = report['canonical']
                     except (ValueError, ParsimParseError,
                             ParsimIncompleteParseError) as exc:
                         ret_code = 1
@@ -427,10 +444,15 @@ note:
                                 sani_proc.stdin.write(tax + '\n')
                                 sani_proc.stdin.flush()
                                 tax_new = sani_proc.stdout.readline().strip()
-
                                 sani_cache[tax] = tax_new
 
-                            row_out[col] = sani_cache[tax]
+                            if tax_list:
+                                tax_list[int(args.subfield[1])] = sani_cache[
+                                    tax]
+                                row_out[col] = args.subfield[0].join(
+                                    tax_list)
+                            else:
+                                row_out[col] = sani_cache[tax]
                 if args.sanitize:
                     csvwriter.writerow(row_out)
 
