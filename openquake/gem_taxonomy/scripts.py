@@ -82,7 +82,7 @@ def validate():
     gt = GemTaxonomy()
 
     try:
-        _, report = gt.validate(args.taxonomy_str)
+        _, _, report = gt.validate(args.taxonomy_str)
         if args.report:
             print(json.dumps(report))
     except (ValueError, ParsimParseError,
@@ -414,7 +414,7 @@ note:
                             tax_list = tax.split(args.subfield[0])
                             tax = tax_list[int(args.subfield[1])]
                     try:
-                        _, report = gt.validate(tax)
+                        _, _, report = gt.validate(tax)
                         if report['is_canonical'] is False:
                             print('%s|%d|%s|%s|%d|%s' % (
                                 filename, row_idx,

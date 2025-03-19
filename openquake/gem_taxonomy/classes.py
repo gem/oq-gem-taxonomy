@@ -1164,14 +1164,14 @@ class GemTaxonomy:
 
         #
         if tax_str == tax_canon:
-            return(l_attrs_canon, {'is_canonical': True})
+            return(attr_canon_in, l_attrs_canon, {'is_canonical': True})
         else:
-            return(l_attrs_canon, {'is_canonical': False,
-                                   'original': tax_str,
-                                   'canonical': tax_canon})
+            return(attr_canon_in, l_attrs_canon, {'is_canonical': False,
+                                                  'original': tax_str,
+                                                  'canonical': tax_canon})
 
     def explain(self, tax_str, fmt='textsingleline'):
-        l_attrs, _ = self.validate(tax_str)
+        _, l_attrs, _ = self.validate(tax_str)
 
         return self.logic_explain(l_attrs, format=fmt)
 
