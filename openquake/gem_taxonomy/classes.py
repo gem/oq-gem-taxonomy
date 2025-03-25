@@ -1170,6 +1170,42 @@ class GemTaxonomy:
                                                   'original': tax_str,
                                                   'canonical': tax_canon})
 
+    def split_by_attributes(self, *args):
+        '''
+        split_by_attributes(taxonomy_string)
+        split_by_attributes(taxonomy_string, field_sep, taxonomy_field_idx,
+                            key_name)
+        '''
+        n_args = len(args)
+        if n_args not in [1, 4]:
+            raise TypeError(
+                '%s.get_attributes() takes'
+                ' 1 or 4 positional arguments but %d'
+                ' were given' % (self.__class__.__name__,
+                                 n_args))
+        if n_args == 1:
+            tax = args[0]
+            attrs, _, _ = self.validate(tax)
+            return attrs
+        else:
+            fields = args[0]
+            sep = args[1]
+            fie_idx = args[2]
+            key_name = args[3]
+            subfields = fields.split(sep)
+            tax = subfields[fie_idx]
+            attrs, _, _ = self.validate(tax)
+            n_subfields = len(subfields)
+
+            if n_subfields == 1:
+                return attrs
+            elif n_subfields == 2:
+                attrs[key_name] = subfields[1-fie_idx]
+            elif n_subfields > 2:
+                others = subfields[0:fie_idx] + subfields[fie_idx+1:]
+                attrs[key_name] = others
+            return attrs
+
     def explain(self, tax_str, fmt='textsingleline'):
         _, l_attrs, _ = self.validate(tax_str)
 
