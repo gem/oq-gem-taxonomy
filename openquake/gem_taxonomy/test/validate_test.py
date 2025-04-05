@@ -20,6 +20,11 @@ import re
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
 taxonomy_strings = [
+    ('', ''),
+    # ('UNK', ''), to be discussed
+    # ('/M', 'TODO'),
+    # ('M/', 'TODO'),
+    # ('+M', 'TODO'),
     ('!?', 'Attribute [!?] parsing error: Rule \'attr\' didn\'t'
      ' match at \'!?\' (line 1, column 1).'),
     ('M/S', 'Attribute [material] multiple declaration, previous: [M],'
