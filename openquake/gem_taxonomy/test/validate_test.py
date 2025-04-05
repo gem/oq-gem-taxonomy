@@ -487,7 +487,7 @@ class ValidateTestCase(unittest.TestCase):
                       (to_log(tax) + (tax[2],)))
 
             try:
-                _, output = gt.validate(tax[0])
+                _, _, output = gt.validate(tax[0])
                 self.assertEqual(
                     tax[1], None,
                     msg='Expected "%s" but not detected' %
@@ -529,7 +529,7 @@ class ReprTestCase(unittest.TestCase):
             if tax[1] is not None:
                 continue
 
-            l_attrs_canon, output = gt.validate(tax[0])
+            _, l_attrs_canon, output = gt.validate(tax[0])
             repr = gt.logic_print(l_attrs_canon)
             repr = re.sub('0x[0-9a-f]+', '0xADDR', repr)
             # print('trepr: [%s]' % repr)
