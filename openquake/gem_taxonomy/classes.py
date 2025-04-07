@@ -472,7 +472,7 @@ class GemTaxonomy:
 
         if vers == '3.3':
             self.taxo_grammar = Grammar(r'''
-                taxo = "UNK" / ( attr ( "/" attr )* ) / ""
+                taxo = "UNK" / ( attr ( "/" attr )* )
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
@@ -1138,13 +1138,24 @@ class GemTaxonomy:
             # print([x.text for x in taxo_attrs])
         except (ParsimParseError,
                 ParsimIncompleteParseError) as exc:
-            if not tax_str[0].isupper():
+            if len(tax_str) == 0:
                 raise ValueError(
-                    'Taxonomy string [%s]: a taxonomy string must start with'
-                    ' an uppercase alphabetic character'
-                    ' or can have "UNK" value.' % tax_str)
+                    'Empty taxonomy string is not valid, use'
+                    ' "UNK" string instead.')
+
             spec_info = ''
-            if re.search(
+            if len(tax_str) > 0 and (not tax_str[0].isupper()):
+                spec_info = (
+                    'Taxonomy string [%s]: a taxonomy string must start with'
+                    ' an uppercase alphabetic character.' % tax_str)
+            elif len(tax_str) > 1 and (
+                    (not tax_str[-1].isupper()) and
+                    (tax_str[-1] not in ')0123456789.')):
+                spec_info = (
+                    'Taxonomy string [%s]: a taxonomy string must end with'
+                    ' an uppercase alpha-numeric or a ")" or a "." character.'
+                    % tax_str)
+            elif re.search(
                     'The non-matching portion of the'
                     ' text begins with \'\\(.+\\)\'',
                     exc.__str__()):

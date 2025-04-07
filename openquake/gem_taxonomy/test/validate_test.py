@@ -25,27 +25,35 @@ truncate.DEFAULT_MAX_CHARS = 9999
 
 taxonomy_strings = [
     # Input taxonomy, Expected error, representation
-    # ('UNK', None), # FIXME: to be discussed
-    # ('/M', 'TODO'),
-    # ('M/', 'TODO'),
-    # ('+M', 'TODO'),
-    # ('!?', 'Taxonomy string [!?]: a taxonomy string must start with an uppercase'
-    #  ' alphabetic character or can have "UNK" value or be empty.'),
-    # ('M/S', 'Attribute [material] multiple declaration, previous: [M],'
-    #  ' current [S]'),
-    # ('S+S', 'Attribute [S+S]: multiple occurrencies of [S] atom.'),
-    # ('C+LO', 'For attribute [C+LO] discordant [atom/argument]->[attribute]'
-    #  ' associations: [C]->[material] vs [LO]->[llrs]'),
-    # ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at'
-    #  ' least 2 arguments, 1 found [MDD(W)].'),
-    # ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
-    #  ' separated by \';\' character. Taxonomy string [MDD(W,Z)] parsing error:'
-    #  ' Rule \'taxo_or_empty\' matched in its entirety, but it didn\'t'
-    #  ' consume all the text. The non-matching portion of the text begins'
-    #  ' with \'(W,Z)\' (line 1, column 4).'),
-
     ('UNK', None, None, ''),
-    ('', None, None, ''),
+    ('', 'Empty taxonomy string is not valid, use "UNK" string'
+     ' instead.', None, ''),
+    ('/M', 'Taxonomy string [/M]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [/M] parsing'
+     ' error: Rule \'taxo\' didn\'t match at \'/M\' (line 1, column 1).'),
+    ('M/', 'Taxonomy string [M/]: a taxonomy string must end with an'
+     ' uppercase alpha-numeric or a ")" or a "." character. Taxonomy'
+     ' string [M/] parsing error: Rule \'taxo\' matched in its entirety,'
+     ' but it didn\'t consume all the text. The non-matching portion of'
+     ' the text begins with \'/\' (line 1, column 2).'),
+    ('+M', 'Taxonomy string [+M]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [+M] parsing error:'
+     ' Rule \'taxo\' didn\'t match at \'+M\' (line 1, column 1).'),
+    ('!?', 'Taxonomy string [!?]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [!?] parsing error:'
+     ' Rule \'taxo\' didn\'t match at \'!?\' (line 1, column 1).'),
+    ('M/S', 'Attribute [material] multiple declaration, previous: [M],'
+     ' current [S]'),
+    ('S+S', 'Attribute [S+S]: multiple occurrencies of [S] atom.'),
+    ('C+LO', 'For attribute [C+LO] discordant [atom/argument]->[attribute]'
+     ' associations: [C]->[material] vs [LO]->[llrs]'),
+    ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at'
+     ' least 2 arguments, 1 found [MDD(W)].'),
+    ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
+     ' separated by \';\' character. Taxonomy string [MDD(W,Z)] parsing error:'
+     ' Rule \'taxo\' matched in its entirety, but it didn\'t'
+     ' consume all the text. The non-matching portion of the text begins'
+     ' with \'(W,Z)\' (line 1, column 4).'),
     ('HYB(C;S)', None, None,
      '<ATTR id="0xADDR" name="material">\n    <ATOM id="0xADDR" name="HYB"'
      ' title="Hybrid or composite (mixed) materials">\n        <args>\n'
