@@ -472,8 +472,7 @@ class GemTaxonomy:
 
         if vers == '3.3':
             self.taxo_grammar = Grammar(r'''
-                taxo_or_empty = "UNK" / taxo / ""
-                taxo = attr ( "/" attr )*
+                taxo = "UNK" / ( attr ( "/" attr )* ) / ""
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
@@ -1114,19 +1113,20 @@ class GemTaxonomy:
 
         taxo_attrs = []
         try:
+            tax_is_empty = False
             taxo_or_empty_tree = self.taxo_grammar.parse(tax_str)
             if len(taxo_or_empty_tree.children) == 1:
                 single_child = taxo_or_empty_tree.children[0]
-                if single_child.expr.__class__.__name__ == 'Literal':
-                    if single_child.text == 'UNK':
-                        tax_empty_alias = 'UNK'
-                        tax_is_empty = True
-                        import pdb ; pdb.set_trace()
+                if (single_child.expr.__class__.__name__ == 'Literal' and
+                        single_child.text == 'UNK'):
+                    tax_is_empty = True
+
             if not tax_is_empty:
                 # extract list of grammar attributes and
                 # place them in taxo_attrs list
                 if len(taxo_or_empty_tree.children) > 0:
-                    if taxo_or_empty_tree.children[0].expr_name == 'taxo':
+                    if (taxo_or_empty_tree.children[0].expr.__class__
+                            .__name__ == 'Sequence'):
                         taxo_tree = taxo_or_empty_tree.children[0]
                         if len(taxo_tree.children) > 0:
                             taxo_attrs.append(taxo_tree.children[0])
@@ -1142,9 +1142,7 @@ class GemTaxonomy:
                 raise ValueError(
                     'Taxonomy string [%s]: a taxonomy string must start with'
                     ' an uppercase alphabetic character'
-                    # FIXME: under review
-                    ' or can have "UNK" value'
-                    ' or be empty.' % tax_str)
+                    ' or can have "UNK" value.' % tax_str)
             spec_info = ''
             if re.search(
                     'The non-matching portion of the'
@@ -1201,8 +1199,6 @@ class GemTaxonomy:
         # import pprint
         # pprint.pprint(self.logic_explain(l_attrs_canon, 'json'))
 
-        #
-        # FIXME: under review
         if tax_str == 'UNK' or tax_str == tax_canon:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': True})
         else:
