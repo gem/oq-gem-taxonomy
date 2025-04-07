@@ -30,9 +30,9 @@ from .version import __version__
 #
 #  TODO:
 #
-#    - fix indentaion using proper method instead of direct access
-#         to the variable
+#    - WIP manage empty and/or UNK string in the case of empty taxonomy
 #
+#    - manage trailing cases
 #    - complete code coverage with, possibly, fixtures where required
 #    - remove _NL
 
@@ -471,7 +471,9 @@ class GemTaxonomy:
         self.LogicIndentation = 0
 
         if vers == '3.3':
-            self.attr_grammar = Grammar(r'''
+            self.taxo_grammar = Grammar(r'''
+                taxo_or_empty = "UNK" / taxo / ""
+                taxo = attr ( "/" attr )*
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
@@ -1109,31 +1111,68 @@ class GemTaxonomy:
         attr_name_in = []
         attr_in = {}
         attr_canon_in = {}
-        attrs = tax_str.split('/')
-        for attr in attrs:
-            try:
-                attr_tree = self.attr_grammar.parse(attr)
-            except (ParsimParseError,
-                    ParsimIncompleteParseError) as exc:
-                spec_info = ''
-                if re.search(
-                        'The non-matching portion of the'
-                        ' text begins with \'\\(.+\\)\'',
-                        exc.__str__()):
-                    spec_info = ('Atom arguments must be'
-                                 ' included in rounded brackets'
-                                 ' and separated by \';\' character.')
-                elif re.search(
-                        'The non-matching portion of the text'
-                        ' begins with \'\\(\\)\'',
-                        exc.__str__()):
-                    spec_info = ('Empty rounded brackets are not'
-                                 ' allowed for atoms with'
-                                 ' optional arguments.')
+
+        taxo_attrs = []
+        try:
+            taxo_or_empty_tree = self.taxo_grammar.parse(tax_str)
+            if len(taxo_or_empty_tree.children) == 1:
+                single_child = taxo_or_empty_tree.children[0]
+                if single_child.expr.__class__.__name__ == 'Literal':
+                    if single_child.text == 'UNK':
+                        tax_empty_alias = 'UNK'
+                        tax_is_empty = True
+                        import pdb ; pdb.set_trace()
+            if not tax_is_empty:
+                # extract list of grammar attributes and
+                # place them in taxo_attrs list
+                if len(taxo_or_empty_tree.children) > 0:
+                    if taxo_or_empty_tree.children[0].expr_name == 'taxo':
+                        taxo_tree = taxo_or_empty_tree.children[0]
+                        if len(taxo_tree.children) > 0:
+                            taxo_attrs.append(taxo_tree.children[0])
+                        if len(taxo_tree.children) > 1:
+                            qta_tree = taxo_tree.children[1]
+                            for seq_tree in qta_tree.children:
+                                taxo_attrs.append(seq_tree.children[1])
+            # print([x.expr.name for x in taxo_attrs])
+            # print([x.text for x in taxo_attrs])
+        except (ParsimParseError,
+                ParsimIncompleteParseError) as exc:
+            if not tax_str[0].isupper():
                 raise ValueError(
-                    '%sAttribute [%s] parsing error: %s.' %
-                    ((("%s " % spec_info) if spec_info else ''),
-                     attr, str(exc).rstrip('.')))
+                    'Taxonomy string [%s]: a taxonomy string must start with'
+                    ' an uppercase alphabetic character'
+                    # FIXME: under review
+                    ' or can have "UNK" value'
+                    ' or be empty.' % tax_str)
+            spec_info = ''
+            if re.search(
+                    'The non-matching portion of the'
+                    ' text begins with \'\\(.+\\)\'',
+                    exc.__str__()):
+                spec_info = ('Atom arguments must be'
+                             ' included in rounded brackets'
+                             ' and separated by \';\' character.')
+            elif re.search(
+                    'The non-matching portion of the text'
+                    ' begins with \'\\(\\)\'',
+                    exc.__str__()):
+                spec_info = ('Empty rounded brackets are not'
+                             ' allowed for atoms with'
+                             ' optional arguments.')
+
+            if exc.__class__ == ParsimParseError:
+                print("ParsimParseError")
+            elif exc.__class__ == ParsimIncompleteParseError:
+                print("ParsimIncompleteParseError")
+
+            raise ValueError(
+                '%sTaxonomy string [%s] parsing error: %s.' %
+                ((("%s " % spec_info) if spec_info else ''),
+                 tax_str, str(exc).rstrip('.')))
+
+        for attr_tree in taxo_attrs:
+            attr = attr_tree.text
 
             attr_name, attr_canon, l_attr = self.validate_attribute(
                 attr, attr_tree, '', None, [])
@@ -1163,7 +1202,8 @@ class GemTaxonomy:
         # pprint.pprint(self.logic_explain(l_attrs_canon, 'json'))
 
         #
-        if tax_str == tax_canon:
+        # FIXME: under review
+        if tax_str == 'UNK' or tax_str == tax_canon:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': True})
         else:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': False,
