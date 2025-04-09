@@ -1,0 +1,9 @@
+Contribution names and dates were collected from GitHub stats and may not
+reflect the actual beginning date of an individual's contribution. If you
+think a name is missing or a date is incorrect, please let us know. =)
+
+- The OpenQuake Team
+
+Code
+----
+Matteo Nastasi           (@nastasi-oq)          April 2025
