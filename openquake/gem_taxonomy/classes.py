@@ -1163,11 +1163,6 @@ class GemTaxonomy:
                              ' allowed for atoms with'
                              ' optional arguments.')
 
-            if exc.__class__ == ParsimParseError:
-                print("ParsimParseError")
-            elif exc.__class__ == ParsimIncompleteParseError:
-                print("ParsimIncompleteParseError")
-
             raise ValueError(
                 '%sTaxonomy string [%s] parsing error: %s.' %
                 ((("%s " % spec_info) if spec_info else ''),
