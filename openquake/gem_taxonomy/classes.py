@@ -1136,7 +1136,7 @@ class GemTaxonomy:
             if len(tax_str) == 0:
                 raise ValueError(
                     'Empty taxonomy string is not valid, use'
-                    ' "UNK" string instead.')
+                    ' \'UNK\' string instead.')
 
             spec_info = ''
             if len(tax_str) > 0 and (not tax_str[0].isupper()):
@@ -1148,7 +1148,8 @@ class GemTaxonomy:
                     (tax_str[-1] not in ')0123456789.')):
                 spec_info = (
                     'Taxonomy string [%s]: a taxonomy string must end with'
-                    ' an uppercase alpha-numeric or a ")" or a "." character.'
+                    ' an uppercase alpha-numeric or a \')\' or a \'.\''
+                    ' character.'
                     % tax_str)
             elif re.search(
                     'The non-matching portion of the'

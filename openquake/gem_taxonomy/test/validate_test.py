@@ -26,13 +26,13 @@ truncate.DEFAULT_MAX_CHARS = 9999
 taxonomy_strings = [
     # Input taxonomy, Expected error, Canonical string (if orig isn't), Repr
     ('UNK', None, None, ''),
-    ('', 'Empty taxonomy string is not valid, use "UNK" string'
+    ('', 'Empty taxonomy string is not valid, use \'UNK\' string'
      ' instead.', None, ''),
     ('/M', 'Taxonomy string [/M]: a taxonomy string must start with an'
      ' uppercase alphabetic character. Taxonomy string [/M] parsing'
      ' error: Rule \'taxo\' didn\'t match at \'/M\' (line 1, column 1).'),
     ('M/', 'Taxonomy string [M/]: a taxonomy string must end with an'
-     ' uppercase alpha-numeric or a ")" or a "." character. Taxonomy'
+     ' uppercase alpha-numeric or a \')\' or a \'.\' character. Taxonomy'
      ' string [M/] parsing error: Rule \'taxo\' matched in its entirety,'
      ' but it didn\'t consume all the text. The non-matching portion of'
      ' the text begins with \'/\' (line 1, column 2).'),
