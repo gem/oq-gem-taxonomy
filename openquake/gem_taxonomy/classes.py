@@ -1105,8 +1105,8 @@ class GemTaxonomy:
         attr_canon_in = {}
 
         taxo_attrs = []
+        tax_is_empty = False
         try:
-            tax_is_empty = False
             taxo_or_empty_tree = self.taxo_grammar.parse(tax_str)
             if len(taxo_or_empty_tree.children) == 1:
                 single_child = taxo_or_empty_tree.children[0]
