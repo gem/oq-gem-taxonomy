@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 #
-# Copyright (C) 2024 GEM Foundation
+# Copyright (C) 2024-2025 GEM Foundation
 #
 # Openquake Gem Taxonomy is free software: you can redistribute it and/or
 # modify it # under the terms of the GNU Affero General Public License as
@@ -30,14 +30,8 @@ from .version import __version__
 #
 #  TODO:
 #
-#    - fix indentaion using proper method instead of direct access
-#         to the variable
-#
 #    - complete code coverage with, possibly, fixtures where required
-#    - remove _NL
-
-_NL = '''
-'''
+#
 
 
 class GemTaxonomy:
@@ -144,11 +138,11 @@ class GemTaxonomy:
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     self.paself.LogicIndInc(4)
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                j_str = ',' + _NL
+                j_str = ',' + '\n'
             else:
                 j_str = ', '
 
@@ -167,7 +161,7 @@ class GemTaxonomy:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE:
                     s += ' '
                 elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
 
             if not is_arg:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -232,7 +226,7 @@ class GemTaxonomy:
             if self.args:
                 s += ' ('
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     indent = self.paself.LogicIndInc(4)
 
                 n_args = len(self.args)
@@ -245,7 +239,7 @@ class GemTaxonomy:
                             s += '; '
                         elif (output_type ==
                               GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
-                            s += ';' + _NL
+                            s += ';' + '\n'
                     # elif idx < (n_args - 1):
                     #     if (output_type ==
                     #         GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
@@ -254,7 +248,7 @@ class GemTaxonomy:
                     #           GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
                     #         s += ' and\n'
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     indent = self.paself.LogicIndDec(4)
                     s += ' ' * indent
                 s += ')'
@@ -471,7 +465,8 @@ class GemTaxonomy:
         self.LogicIndentation = 0
 
         if vers == '3.3':
-            self.attr_grammar = Grammar(r'''
+            self.taxo_grammar = Grammar(r'''
+                taxo = "UNK" / ( attr ( "/" attr )* )
                 attr = atom ( "+" atom )*
                 atom = ~r"[A-Z][A-Z0-9]*" atom_args* atom_params*
                 atom_args = "(" attr ( ";" attr )* ")"
@@ -1109,31 +1104,75 @@ class GemTaxonomy:
         attr_name_in = []
         attr_in = {}
         attr_canon_in = {}
-        attrs = tax_str.split('/')
-        for attr in attrs:
-            try:
-                attr_tree = self.attr_grammar.parse(attr)
-            except (ParsimParseError,
-                    ParsimIncompleteParseError) as exc:
-                spec_info = ''
-                if re.search(
-                        'The non-matching portion of the'
-                        ' text begins with \'\\(.+\\)\'',
-                        exc.__str__()):
-                    spec_info = ('Atom arguments must be'
-                                 ' included in rounded brackets'
-                                 ' and separated by \';\' character.')
-                elif re.search(
-                        'The non-matching portion of the text'
-                        ' begins with \'\\(\\)\'',
-                        exc.__str__()):
-                    spec_info = ('Empty rounded brackets are not'
-                                 ' allowed for atoms with'
-                                 ' optional arguments.')
+        l_attrs_canon = []
+
+        taxo_attrs = []
+        tax_is_empty = False
+        try:
+            taxo_or_empty_tree = self.taxo_grammar.parse(tax_str)
+            if len(taxo_or_empty_tree.children) == 1:
+                single_child = taxo_or_empty_tree.children[0]
+                if (single_child.expr.__class__.__name__ == 'Literal' and
+                        single_child.text == 'UNK'):
+                    tax_is_empty = True
+
+            if not tax_is_empty:
+                # extract list of grammar attributes and
+                # place them in taxo_attrs list
+                if len(taxo_or_empty_tree.children) > 0:
+                    if (taxo_or_empty_tree.children[0].expr.__class__
+                            .__name__ == 'Sequence'):
+                        taxo_tree = taxo_or_empty_tree.children[0]
+                        if len(taxo_tree.children) > 0:
+                            taxo_attrs.append(taxo_tree.children[0])
+                        if len(taxo_tree.children) > 1:
+                            qta_tree = taxo_tree.children[1]
+                            for seq_tree in qta_tree.children:
+                                taxo_attrs.append(seq_tree.children[1])
+            # print([x.expr.name for x in taxo_attrs])
+            # print([x.text for x in taxo_attrs])
+        except (ParsimParseError,
+                ParsimIncompleteParseError) as exc:
+            if len(tax_str) == 0:
                 raise ValueError(
-                    '%sAttribute [%s] parsing error: %s.' %
-                    ((("%s " % spec_info) if spec_info else ''),
-                     attr, str(exc).rstrip('.')))
+                    'Empty taxonomy string is not valid, use'
+                    ' \'UNK\' string instead.')
+
+            spec_info = ''
+            if len(tax_str) > 0 and (not tax_str[0].isupper()):
+                spec_info = (
+                    'Taxonomy string [%s]: a taxonomy string must start with'
+                    ' an uppercase alphabetic character.' % tax_str)
+            elif len(tax_str) > 1 and (
+                    (not tax_str[-1].isupper()) and
+                    (tax_str[-1] not in ')0123456789.')):
+                spec_info = (
+                    'Taxonomy string [%s]: a taxonomy string must end with'
+                    ' an uppercase alpha-numeric or a \')\' or a \'.\''
+                    ' character.'
+                    % tax_str)
+            elif re.search(
+                    'The non-matching portion of the'
+                    ' text begins with \'\\(.+\\)\'',
+                    exc.__str__()):
+                spec_info = ('Atom arguments must be'
+                             ' included in rounded brackets'
+                             ' and separated by \';\' character.')
+            elif re.search(
+                    'The non-matching portion of the text'
+                    ' begins with \'\\(\\)\'',
+                    exc.__str__()):
+                spec_info = ('Empty rounded brackets are not'
+                             ' allowed for atoms with'
+                             ' optional arguments.')
+
+            raise ValueError(
+                '%sTaxonomy string [%s] parsing error: %s.' %
+                ((("%s " % spec_info) if spec_info else ''),
+                 tax_str, str(exc).rstrip('.')))
+
+        for attr_tree in taxo_attrs:
+            attr = attr_tree.text
 
             attr_name, attr_canon, l_attr = self.validate_attribute(
                 attr, attr_tree, '', None, [])
@@ -1147,14 +1186,17 @@ class GemTaxonomy:
             attr_name_in.append(attr_name)
             attr_in[attr_name] = attr
             attr_canon_in[attr_name] = attr_canon
-        attr_progs = [int(self.tax['AttributeDict'][x]['prog']) for x
-                      in attr_name_in]
-        attr_name_canon = [x for _, x in sorted(
-            zip(attr_progs, attr_name_in))]
-        tax_canon = '/'.join([attr_canon_in[x] for x in
-                              attr_name_canon])
-        l_attrs_canon = [x for _, x in sorted(
-            zip(attr_progs, l_attrs))]
+        if tax_is_empty:
+            tax_canon = 'UNK'
+        else:
+            attr_progs = [int(self.tax['AttributeDict'][x]['prog']) for x
+                          in attr_name_in]
+            attr_name_canon = [x for _, x in sorted(
+                zip(attr_progs, attr_name_in))]
+            tax_canon = '/'.join([attr_canon_in[x] for x in
+                                  attr_name_canon])
+            l_attrs_canon = [x for _, x in sorted(
+                zip(attr_progs, l_attrs))]
 
         # self.logic_print(l_attrs_canon)
         # print(self.logic_explain(l_attrs_canon, 'textsingleline'))
@@ -1162,7 +1204,6 @@ class GemTaxonomy:
         # import pprint
         # pprint.pprint(self.logic_explain(l_attrs_canon, 'json'))
 
-        #
         if tax_str == tax_canon:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': True})
         else:

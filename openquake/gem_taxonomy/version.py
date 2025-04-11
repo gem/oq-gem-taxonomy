@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 #
-# Copyright (C) 2024 GEM Foundation
+# Copyright (C) 2024-2025 GEM Foundation
 #
 # Openquake Gem Taxonomy is free software: you can redistribute it and/or
 # modify it # under the terms of the GNU Affero General Public License as
@@ -16,4 +16,4 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '1.8.0'
+__version__ = '1.9.0'
