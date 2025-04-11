@@ -480,7 +480,6 @@ def _graph_check_args(gt, atom, atom_tree):
     atom_args_type_parts = atom_args['type'].split('(')
     atom_args_type = atom_args_type_parts[0]
     if atom_args_type == 'filtered_atomsgroup':
-        # import pdb ; pdb.set_trace()
         args_group_name = atom_args_type_parts[1].split(
             ',')[0][1:-1]
         args_title = "(%s)" % gt.tax[
@@ -489,7 +488,6 @@ def _graph_check_args(gt, atom, atom_tree):
             args_tree = OrderedDict()
             atom_tree[args_title] = args_tree
     elif atom_args_type == 'filtered_attribute':
-        # import pdb ; pdb.set_trace()
         args_attr_name = atom_args_type_parts[1].split(
             ',')[0][1:-1]
         args_title = "(/%s/)" % gt.tax[
@@ -500,7 +498,6 @@ def _graph_check_args(gt, atom, atom_tree):
 
 
 def _graph_dive_deps(gt, atom_anc, atom_anc_tree):
-    # import pdb ; pdb.set_trace()
     for k, v in gt.tax['AtomsDeps'].items():
         if atom_anc['name'] in v:
             atom = gt.tax['AtomDict'][k]
