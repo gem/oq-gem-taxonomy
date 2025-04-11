@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 #
-# Copyright (C) 2024 GEM Foundation
+# Copyright (C) 2024-2025 GEM Foundation
 #
 # Openquake Gem Taxonomy is free software: you can redistribute it and/or
 # modify it # under the terms of the GNU Affero General Public License as
@@ -19,9 +19,29 @@ import os
 import re
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
+from _pytest.assertion import truncate
+truncate.DEFAULT_MAX_LINES = 9999
+truncate.DEFAULT_MAX_CHARS = 9999
+
 taxonomy_strings = [
-    ('!?', 'Attribute [!?] parsing error: Rule \'attr\' didn\'t'
-     ' match at \'!?\' (line 1, column 1).'),
+    # Input taxonomy, Expected error, Canonical string (if orig isn't), Repr
+    ('UNK', None, None, ''),
+    ('', 'Empty taxonomy string is not valid, use \'UNK\' string'
+     ' instead.', None, ''),
+    ('/M', 'Taxonomy string [/M]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [/M] parsing'
+     ' error: Rule \'taxo\' didn\'t match at \'/M\' (line 1, column 1).'),
+    ('M/', 'Taxonomy string [M/]: a taxonomy string must end with an'
+     ' uppercase alpha-numeric or a \')\' or a \'.\' character. Taxonomy'
+     ' string [M/] parsing error: Rule \'taxo\' matched in its entirety,'
+     ' but it didn\'t consume all the text. The non-matching portion of'
+     ' the text begins with \'/\' (line 1, column 2).'),
+    ('+M', 'Taxonomy string [+M]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [+M] parsing error:'
+     ' Rule \'taxo\' didn\'t match at \'+M\' (line 1, column 1).'),
+    ('!?', 'Taxonomy string [!?]: a taxonomy string must start with an'
+     ' uppercase alphabetic character. Taxonomy string [!?] parsing error:'
+     ' Rule \'taxo\' didn\'t match at \'!?\' (line 1, column 1).'),
     ('M/S', 'Attribute [material] multiple declaration, previous: [M],'
      ' current [S]'),
     ('S+S', 'Attribute [S+S]: multiple occurrencies of [S] atom.'),
@@ -30,11 +50,10 @@ taxonomy_strings = [
     ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at'
      ' least 2 arguments, 1 found [MDD(W)].'),
     ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
-     ' separated by \';\' character. Attribute [MDD(W,Z)] parsing error:'
-     ' Rule \'attr\' matched in its entirety, but it didn\'t consume all'
-     ' the text. The non-matching portion of the text begins with'
-     ' \'(W,Z)\' (line 1, column 4).'),
-
+     ' separated by \';\' character. Taxonomy string [MDD(W,Z)] parsing error:'
+     ' Rule \'taxo\' matched in its entirety, but it didn\'t'
+     ' consume all the text. The non-matching portion of the text begins'
+     ' with \'(W,Z)\' (line 1, column 4).'),
     ('HYB(C;S)', None, None,
      '<ATTR id="0xADDR" name="material">\n    <ATOM id="0xADDR" name="HYB"'
      ' title="Hybrid or composite (mixed) materials">\n        <args>\n'
@@ -87,9 +106,10 @@ taxonomy_strings = [
      '            </ATTR>\n        </args>\n'
      '    </ATOM>\n</ATTR>\n'),
     ('MDD(HYB(C,S,W);S)', 'Atom arguments must be included in rounded brackets'
-     ' and separated by \';\' character. Attribute [MDD(HYB(C,S,W);S)] parsing'
-     ' error: Rule \'attr\' matched in its entirety, but it didn\'t consume all'
-     ' the text. The non-matching portion of the text begins with \'(HYB(C,S,W);'
+     ' and separated by \';\' character. Taxonomy string [MDD(HYB(C,S,W);S)] parsing'
+     ' error: Rule \'taxo\' matched in its entirety, but it didn\'t'
+     ' consume all the text. The non-matching portion of the text begins with'
+     ' \'(HYB(C,S,W);'
      'S)\' (line 1, column 4).'),
     ('MDD(HYB(C;S;W);S)', None, None, '<ATTR id="0xADDR" name="material">\n'
      '    <ATOM id="0xADDR" name="MDD" title="Different materials in the two'
@@ -114,8 +134,8 @@ taxonomy_strings = [
     ('MDD(HYB(S;W(X;Y)))', 'Attribute [MDD(HYB(S;W(X;Y)))]: atom MDD requires'
      ' at least 2 arguments, 1 found [MDD(HYB(S;W(X;Y)))].'),
     ('MDD(HYB(S;W(X;Y)), S)', 'Atom arguments must be included in rounded '
-     'brackets and separated by \';\' character. Attribute [MDD(HYB(S;W(X;Y)),'
-     ' S)] parsing error: Rule \'attr\' matched in its entirety, but it didn\'t'
+     'brackets and separated by \';\' character. Taxonomy string [MDD(HYB(S;W(X;Y)),'
+     ' S)] parsing error: Rule \'taxo\' matched in its entirety, but it didn\'t'
      ' consume all the text. The non-matching portion of the text begins with'
      ' \'(HYB(S;W(X;Y)), S)\' (line 1, column 4).'),
     ('MDD(HYB(S;W(X;Y));S)', 'Attribute [MDD(HYB(S;W(X;Y));S)]: argument[s]'
@@ -125,19 +145,19 @@ taxonomy_strings = [
     ('MDD(W)', 'Attribute [MDD(W)]: atom MDD requires at least 2 arguments,'
      ' 1 found [MDD(W)].'),
     ('MDD(W, Z)', 'Atom arguments must be included in rounded brackets and'
-     ' separated by \';\' character. Attribute [MDD(W, Z)] parsing error:'
-     ' Rule \'attr\' matched in its entirety, but it didn\'t consume all the text.'
+     ' separated by \';\' character. Taxonomy string [MDD(W, Z)] parsing error:'
+     ' Rule \'taxo\' matched in its entirety, but it didn\'t consume all the text.'
      ' The non-matching portion of the text begins with \'(W, Z)\' (line 1,'
      ' column 4).'),
     ('MDD(W,Z)', 'Atom arguments must be included in rounded brackets and'
-     ' separated by \';\' character. Attribute [MDD(W,Z)] parsing error: Rule'
-     ' \'attr\' matched in its entirety, but it didn\'t consume all the text.'
+     ' separated by \';\' character. Taxonomy string [MDD(W,Z)] parsing error: Rule'
+     ' \'taxo\' matched in its entirety, but it didn\'t consume all the text.'
      ' The non-matching portion of the text begins with \'(W,Z)\' (line 1,'
      ' column 4).'),
     ('MDD(W;Z)', 'Attribute [MDD(W;Z)]: unknown atom [Z].'),
 
     ('W()', 'Empty rounded brackets are not allowed for atoms with optional'
-     ' arguments. Attribute [W()] parsing error: Rule \'attr\' matched in its'
+     ' arguments. Taxonomy string [W()] parsing error: Rule \'taxo\' matched in its'
      ' entirety, but it didn\'t consume all the text. The non-matching portion'
      ' of the text begins with \'()\' (line 1, column 2).'),
 
@@ -189,7 +209,7 @@ taxonomy_strings = [
      ' unreinforced"/>\n            </ATTR>\n        </args>\n'
      '    </ATOM>\n</ATTR>\n'),
     ('LFINF()', 'Empty rounded brackets are not allowed for atoms with optional'
-     ' arguments. Attribute [LFINF()] parsing error: Rule \'attr\' matched'
+     ' arguments. Taxonomy string [LFINF()] parsing error: Rule \'taxo\' matched'
      ' in its entirety, but it didn\'t consume all the text. The non-matching'
      ' portion of the text begins with \'()\' (line 1, column 6).'),
 
