@@ -18,6 +18,7 @@
 import os
 import sys
 import csv
+from collections import OrderedDict
 import json
 import glob
 import argparse
@@ -469,3 +470,140 @@ note:
         sani_proc.wait()
 
     sys.exit(ret_code)
+
+
+def _graph_check_args(gt, atom, atom_tree):
+    if not atom['args']:
+        return
+
+    atom_args = json.loads(atom['args'])
+    atom_args_type_parts = atom_args['type'].split('(')
+    atom_args_type = atom_args_type_parts[0]
+    if atom_args_type == 'filtered_atomsgroup':
+        args_group_name = atom_args_type_parts[1].split(
+            ',')[0][1:-1]
+        args_title = "(%s)" % gt.tax[
+            'AtomsGroupDict'][args_group_name]['title']
+        if args_title not in atom_tree:
+            args_tree = OrderedDict()
+            atom_tree[args_title] = args_tree
+    elif atom_args_type == 'filtered_attribute':
+        args_attr_name = atom_args_type_parts[1].split(
+            ',')[0][1:-1]
+        args_title = "(/%s/)" % gt.tax[
+            'AttributeDict'][args_attr_name]['title']
+        if args_title not in atom_tree:
+            args_tree = OrderedDict()
+            atom_tree[args_title] = args_tree
+
+
+def _graph_dive_deps(gt, atom_anc, atom_anc_tree):
+    for k, v in gt.tax['AtomsDeps'].items():
+        if atom_anc['name'] in v:
+            atom = gt.tax['AtomDict'][k]
+            group_title = gt.tax['AtomsGroupDict'][
+                atom['group']]['title']
+            if group_title in atom_anc_tree:
+                atom_tree = atom_anc_tree[group_title]
+            else:
+                atom_tree = OrderedDict()
+                atom_anc_tree[group_title] = atom_tree
+
+            _graph_dive_deps(gt, gt.tax['AtomDict'][k],
+                             atom_tree)
+    _graph_check_args(gt, atom_anc, atom_anc_tree)
+
+
+def _graph_print(tree, spc=0):
+    for key, el in tree.items():
+        if spc == 0:
+            print()
+        print(" " * spc + key)
+        if el:
+            _graph_print(el, spc=(spc + 4))
+
+
+def _graph_dot_el(tree, parent_key=None):
+    rank = '    {rank = same;\n'
+    rank_els = ''
+    for key, el in tree.items():
+        is_arg = False
+        is_attr = False
+        if key[0] == '(':
+            is_arg = True
+            key = key[1:-1]
+        if key[0] == '/':
+            is_attr = True
+
+        if is_attr:
+            print('    "%s" [shape="rectangle"]' % key)
+        else:
+            print('    "%s"' % key)
+
+        if parent_key:
+            if is_arg:
+                print('    "%s" -> "%s" [color="red"]' % (
+                    parent_key, key))
+            else:
+                print('    "%s" -> "%s"' % (
+                    parent_key, key))
+        else:
+            if rank_els != '':
+                rank_els += ' -> '
+            rank_els += '"%s"' % key
+        _graph_dot_el(el, parent_key=key)
+
+    if not parent_key:
+        rank += rank_els
+        rank += ' [ style=invis ]; rankdir = TB;\n'
+        rank += '    }'
+        print(rank)
+
+
+def _graph_dot(tree):
+    print('digraph {')
+    print('    rankdir="LR"')
+    print('')
+
+    _graph_dot_el(tree)
+    print('}')
+
+
+def specs2graph():
+    parser = argparse.ArgumentParser(
+        description='Create graph of taxonomy specifications (version 3.3).')
+    parser.add_argument(
+        '-d', '--dot', action='store_true',
+        help='generate a gragh in .dot format')
+    parser.add_argument('-V', '--version', action='version',
+                        version='%s' % __version__,
+                        help='show application version and exit')
+
+    args = parser.parse_args()
+    out_tree = OrderedDict()
+
+    gt = GemTaxonomy()
+    for attr in gt.tax['Attribute']:
+        attr_tree = OrderedDict()
+        out_tree[("/%s/" % attr['title'])] = attr_tree
+
+        for atom in gt.tax['Atom']:
+            # print(atom['attr'])
+            if atom['attr'] != attr['name']:
+                continue
+
+            if atom['name'] not in gt.tax['AtomsDeps']:
+                group_title = gt.tax['AtomsGroupDict'][
+                    atom['group']]['title']
+                if group_title in attr_tree:
+                    atom_tree = attr_tree[group_title]
+                else:
+                    atom_tree = OrderedDict()
+                    attr_tree[group_title] = atom_tree
+
+                _graph_dive_deps(gt, atom, atom_tree)
+
+    if args.dot:
+        _graph_dot(out_tree)
+    else:
+        _graph_print(out_tree)
