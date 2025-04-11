@@ -30,15 +30,8 @@ from .version import __version__
 #
 #  TODO:
 #
-#    - WIP manage empty and/or UNK string in the case of empty taxonomy
-#
-#    - manage trailing cases
 #    - complete code coverage with, possibly, fixtures where required
-#    - remove _NL
-
-_NL = '''
-'''
-
+#
 
 class GemTaxonomy:
     class EXPL_OUT_TYPE:
@@ -144,11 +137,11 @@ class GemTaxonomy:
             if not is_arg:
                 s += '%s: ' % self.attribute['title']
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     self.paself.LogicIndInc(4)
 
             if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                j_str = ',' + _NL
+                j_str = ',' + '\n'
             else:
                 j_str = ', '
 
@@ -167,7 +160,7 @@ class GemTaxonomy:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE:
                     s += ' '
                 elif output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
 
             if not is_arg:
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
@@ -232,7 +225,7 @@ class GemTaxonomy:
             if self.args:
                 s += ' ('
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     indent = self.paself.LogicIndInc(4)
 
                 n_args = len(self.args)
@@ -245,7 +238,7 @@ class GemTaxonomy:
                             s += '; '
                         elif (output_type ==
                               GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
-                            s += ';' + _NL
+                            s += ';' + '\n'
                     # elif idx < (n_args - 1):
                     #     if (output_type ==
                     #         GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE):
@@ -254,7 +247,7 @@ class GemTaxonomy:
                     #           GemTaxonomy.EXPL_OUT_TYPE.MULTILINE):
                     #         s += ' and\n'
                 if output_type == GemTaxonomy.EXPL_OUT_TYPE.MULTILINE:
-                    s += _NL
+                    s += '\n'
                     indent = self.paself.LogicIndDec(4)
                     s += ' ' * indent
                 s += ')'
