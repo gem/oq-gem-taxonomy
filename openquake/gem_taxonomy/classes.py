@@ -33,6 +33,7 @@ from .version import __version__
 #    - complete code coverage with, possibly, fixtures where required
 #
 
+
 class GemTaxonomy:
     class EXPL_OUT_TYPE:
         SINGLELINE = 1
@@ -1103,6 +1104,7 @@ class GemTaxonomy:
         attr_name_in = []
         attr_in = {}
         attr_canon_in = {}
+        l_attrs_canon = []
 
         taxo_attrs = []
         tax_is_empty = False
@@ -1183,14 +1185,17 @@ class GemTaxonomy:
             attr_name_in.append(attr_name)
             attr_in[attr_name] = attr
             attr_canon_in[attr_name] = attr_canon
-        attr_progs = [int(self.tax['AttributeDict'][x]['prog']) for x
-                      in attr_name_in]
-        attr_name_canon = [x for _, x in sorted(
-            zip(attr_progs, attr_name_in))]
-        tax_canon = '/'.join([attr_canon_in[x] for x in
-                              attr_name_canon])
-        l_attrs_canon = [x for _, x in sorted(
-            zip(attr_progs, l_attrs))]
+        if tax_is_empty:
+            tax_canon = 'UNK'
+        else:
+            attr_progs = [int(self.tax['AttributeDict'][x]['prog']) for x
+                          in attr_name_in]
+            attr_name_canon = [x for _, x in sorted(
+                zip(attr_progs, attr_name_in))]
+            tax_canon = '/'.join([attr_canon_in[x] for x in
+                                  attr_name_canon])
+            l_attrs_canon = [x for _, x in sorted(
+                zip(attr_progs, l_attrs))]
 
         # self.logic_print(l_attrs_canon)
         # print(self.logic_explain(l_attrs_canon, 'textsingleline'))
@@ -1198,7 +1203,7 @@ class GemTaxonomy:
         # import pprint
         # pprint.pprint(self.logic_explain(l_attrs_canon, 'json'))
 
-        if tax_str == 'UNK' or tax_str == tax_canon:
+        if tax_str == tax_canon:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': True})
         else:
             return(attr_canon_in, l_attrs_canon, {'is_canonical': False,
