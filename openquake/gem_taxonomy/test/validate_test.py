@@ -24,7 +24,7 @@ truncate.DEFAULT_MAX_LINES = 9999
 truncate.DEFAULT_MAX_CHARS = 9999
 
 taxonomy_strings = [
-    # Input taxonomy, Expected error, representation
+    # Input taxonomy, Expected error, Canonical string (if orig isn't), Repr
     ('UNK', None, None, ''),
     ('', 'Empty taxonomy string is not valid, use "UNK" string'
      ' instead.', None, ''),
