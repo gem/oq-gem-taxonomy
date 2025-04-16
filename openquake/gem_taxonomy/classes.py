@@ -1248,9 +1248,9 @@ class GemTaxonomy:
             return attrs
 
     def explain(self, tax_str, fmt='textsingleline'):
-        _, l_attrs, _ = self.validate(tax_str)
+        _, l_attrs, val_reply = self.validate(tax_str)
 
-        return self.logic_explain(l_attrs, format=fmt)
+        return self.logic_explain(l_attrs, format=fmt) + (val_reply,)
 
     def dump_explain(self, fmt, expl):
         if fmt in [GemTaxonomy.EXPL_OUT_TYPE.SINGLELINE,

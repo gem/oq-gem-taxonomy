@@ -124,7 +124,7 @@ def explain():
     gt = GemTaxonomy()
 
     try:
-        fmt, expl = gt.explain(args.taxonomy_str, fmt=args.format)
+        fmt, expl, val_reply = gt.explain(args.taxonomy_str, fmt=args.format)
     except (ValueError, ParsimParseError,
             ParsimIncompleteParseError) as exc:
         print(str(exc), file=sys.stderr)
