@@ -34,7 +34,7 @@ def extract_attributes(value):
         return attr_dict
 ```
 
-[scripts.py](openquake/gem_taxonomy/scripts.py] is another good entry-point to understand how to use ``GemTaxonomy`` class.
+[scripts.py](openquake/gem_taxonomy/scripts.py) is another good entry-point to understand how to use ``GemTaxonomy`` class.
 
 ## Console Commands
 
