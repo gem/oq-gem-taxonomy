@@ -112,7 +112,8 @@ class GemTaxonomy:
             s = ''
             for attr in attrs:
                 s += attr.explain(output_type=output_type)
-
+            if not attrs:
+                s = "Completely unknown taxonomy."
             return output_type, s
 
     class LogicAttribute:
