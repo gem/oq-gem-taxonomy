@@ -1,8 +1,8 @@
-##### Python OpenQuake Gem Taxonomy
+# Python OpenQuake Gem Taxonomy
 
 python package with GEM Building Taxonomy related class and shell commands.
 
-#### Python Code
+## Python Code
 
 This package provide one class: ``GemTaxonomy``
 
@@ -36,7 +36,7 @@ def extract_attributes(value):
 
 [scripts.py](openquake/gem_taxonomy/scripts.py] is another good entry-point to understand how to use ``GemTaxonomy`` class.
 
-#### Console Commands
+## Console Commands
 
 The package includes command line tools using the python package to perform different tasks
 
