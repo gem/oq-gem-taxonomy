@@ -34,11 +34,11 @@ def extract_attributes(value):
         return attr_dict
 ```
 
-[scripts.py](openquake/gem_taxonomy/scripts.py) is another good entry-point to understand how to use ``GemTaxonomy`` class.
+[scripts.py](https://github.com/gem/oq-gem-taxonomy/blob/main/openquake/gem_taxonomy/scripts.py) is another good entry-point to understand how to use ``GemTaxonomy`` class.
 
 ## Console Commands
 
-The package includes command line tools using the python package to perform different tasks
+The package includes several command line tools using the python class to perform different tasks.
 
 ``gem-taxonomy-validate``: validate taxonomy string passed as parameter
 
@@ -48,5 +48,5 @@ The package includes command line tools using the python package to perform diff
 
 ``gem-taxonomy-info``: retrieves information about the taxonomy package and related packages
 
-``gem-taxonomy-specs2graph``: create a .dot file that explains relations between atoms groups and attributes.
+``gem-taxonomy-specs2graph``: create a ``.dot`` file that explains relations between atoms groups and attributes.
 
