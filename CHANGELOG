@@ -1,3 +1,13 @@
+openquake.gem-taxonomy (1.11.0)
+
+  [Matteo Nastasi]
+  * Explain return proper description "Completely unknown taxonomy." for complete unknown
+    taxonomy string
+  * `validate` return as third element a dictionary with the proper API reply
+  * `openquake.gem-taxonomy-data` dependency moved to v1.4.0
+
+ -- Matteo Nastasi (GEM Foundation) <nastasi@openquake.org>  Tue, 13 May 2025 09:15:18 +0000
+
 openquake.gem-taxonomy (1.10.0)
 
   [Matteo Nastasi]

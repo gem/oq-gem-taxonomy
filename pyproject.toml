@@ -7,7 +7,7 @@ name = "openquake.gem-taxonomy"
 dynamic = ["version"]
 
 dependencies = [
-   "openquake.gem-taxonomy-data @ git+ssh://git@github.com/gem/oq-gem-taxonomy-data.git",
+   "openquake.gem-taxonomy-data @ git+https://github.com/gem/oq-gem-taxonomy-data.git@v1.4.0",
    "parsimonious == 0.10.0"
 ]
 
@@ -18,12 +18,12 @@ authors = [
 maintainers = [
   {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
 ]
-description = "Openquake Gem Taxonomy - Library to manage GEM Taxonomy strings"
+description = "Openquake Gem Taxonomy - Package to manage GEM Building Taxonomy strings"
 readme = "README.md"
 license = {file = "LICENSE.txt"}
-keywords = ["GEM", "taxonomy", "standard", "openquake"]
+keywords = ["GEM", "taxonomy", "building", "standard", "openquake"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
 
