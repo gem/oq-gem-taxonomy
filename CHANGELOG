@@ -1,6 +1,13 @@
 openquake.gem-taxonomy (1.11.0)
 
   [Matteo Nastasi]
+  * Revert namespace declaration to the pkg_resources legacy style to be aligned with engine
+
+ -- Matteo Nastasi (GEM Foundation) <nastasi@openquake.org>  Fri, 16 May 2025 14:17:53 +0000
+
+openquake.gem-taxonomy (1.11.0)
+
+  [Matteo Nastasi]
   * Explain return proper description "Completely unknown taxonomy." for complete unknown
     taxonomy string
   * `validate` return as third element a dictionary with the proper API reply
