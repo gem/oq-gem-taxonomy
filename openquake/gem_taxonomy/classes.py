@@ -588,6 +588,10 @@ class GemTaxonomy:
                     [], [], None)
 
                 args_list_canon.append(tree_arg.text)
+                if len(tree_arg.children) > 1 and len(tree_arg.children[1].children) > 0:
+                    raise ValueError(
+                        'Attribute [%s]: composition of atoms not allowed [%s].' % (
+                            attr_base, tree_arg.text))
                 if atom_name not in self.tax['AtomDict']:
                     raise ValueError(
                         'Attribute [%s]: unknown atom [%s].' % (

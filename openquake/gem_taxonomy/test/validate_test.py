@@ -182,6 +182,8 @@ taxonomy_strings = [
      '        </params>\n    </ATOM>\n</ATTR>\n'),
     ('H:3:5', 'Attribute [H:3:5]: atom [H] requires a maximum of 1 parameter,'
      ' 2 found [H:3:5].'),
+    ('IRI+IRP(TOR+REC)', 'Attribute [IRI+IRP(TOR+REC)]: composition of atoms'
+     ' not allowed [TOR+REC].'),
     ('IRI+IRP(TOR;REC)', None, None, '<ATTR id="0xADDR" name="irregularity">\n'
      '    <ATOM id="0xADDR" name="IRI" title="Irregular structure"/>\n'
      '    <ATOM id="0xADDR" name="IRP" title="Plan irregularities list'
