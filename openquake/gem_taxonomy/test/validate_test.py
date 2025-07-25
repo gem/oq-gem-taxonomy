@@ -17,13 +17,16 @@
 # along with OpenQuake. If not, see <http://www.gnu.org/licenses/>.
 import os
 import re
+import copy
 import unittest
 from openquake.gem_taxonomy import GemTaxonomy
 from _pytest.assertion import truncate
 truncate.DEFAULT_MAX_LINES = 9999
 truncate.DEFAULT_MAX_CHARS = 9999
 
-taxonomy_strings = [
+test_vers_range = ['3.3', '4.0']
+
+taxonomy_strings = {'3.3': [
     # Input taxonomy, Expected error, Canonical string (if orig isn't), Repr
     ('UNK', None, None, ''),
     ('', 'Empty taxonomy string is not valid, use \'UNK\' string'
@@ -89,9 +92,12 @@ taxonomy_strings = [
     ('MDD(HYB(C);S)', 'Attribute [MDD(HYB(C);S)]: atom HYB requires at least'
      ' 2 arguments, 1 found [HYB(C)].'),
     ('MDD(HYB(C;S);S)', None, None, '<ATTR id="0xADDR" name="material">\n'
-     '    <ATOM id="0xADDR" name="MDD" title="Different materials in the two'
-     ' directions">\n        <args>\n            <ATTR id="0xADDR"'
-     ' name="material">\n                <ATOM id="0xADDR" name="HYB"'
+     '    <ATOM id="0xADDR" name="MDD" title="MDD(sys_a;sys_b), different'
+     ' materials in the two directions\n'
+     '(a= system parallel to the building facade;\n'
+     ' b= system perpendicular to the building facade)">\n'
+     '        <args>\n            <ATTR'
+     ' id="0xADDR" name="material">\n                <ATOM id="0xADDR" name="HYB"'
      ' title="Hybrid or composite (mixed) materials">\n'
      '                    <args>\n                        <ATTR id="0xADDR"'
      ' name="material">\n                            <ATOM id="0xADDR"'
@@ -112,8 +118,11 @@ taxonomy_strings = [
      ' \'(HYB(C,S,W);'
      'S)\' (line 1, column 4).'),
     ('MDD(HYB(C;S;W);S)', None, None, '<ATTR id="0xADDR" name="material">\n'
-     '    <ATOM id="0xADDR" name="MDD" title="Different materials in the two'
-     ' directions">\n        <args>\n            <ATTR id="0xADDR"'
+     '    <ATOM id="0xADDR" name="MDD" title="MDD(sys_a;sys_b), different'
+     ' materials in the two directions\n'
+     '(a= system parallel to the building facade;\n'
+     ' b= system perpendicular to the building facade)">\n'
+     '        <args>\n            <ATTR id="0xADDR"'
      ' name="material">\n                <ATOM id="0xADDR" name="HYB"'
      ' title="Hybrid or composite (mixed) materials">\n'
      '                    <args>\n                        <ATTR id="0xADDR"'
@@ -194,6 +203,11 @@ taxonomy_strings = [
     ('IRI+IRP(TOR;CHV)', 'Attribute [IRI+IRP(TOR;CHV)], atom [CHV], expected'
      ' atomsgroup [plan_irregularity], found atom [CHV] of atomsgroup'
      ' [vertical_irregularity].'),
+
+
+    ('IRI(TOR)', 'Attribute [IRI(TOR)]: argument[s] not expected for atom [IRI].'),
+    ('IRI(TOR;SET;CHV)', 'Attribute [IRI(TOR;SET;CHV)]: argument[s] not expected for atom [IRI].'),
+
     ('MIX(RES;MIX(COM;GOV))', 'Attribute [MIX(RES;MIX(COM;GOV))],'
      ' forbidden atom found [MIX].'),
     ('MIX(RES;COM;GOV)', None, None, '<ATTR id="0xADDR" name="occupancy">\n'
@@ -389,8 +403,11 @@ taxonomy_strings = [
     ('DCW:0.4+LFM/MDD(SL+S;HYB(ADO+M;WHE+W))', None,
      'MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4',
      '<ATTR id="0xADDR" name="material">\n    <ATOM id="0xADDR"'
-     ' name="MDD" title="Different materials in the two'
-     ' directions">\n        <args>\n            <ATTR id="0xADDR"'
+     ' name="MDD" title="MDD(sys_a;sys_b), different'
+     ' materials in the two directions\n'
+     '(a= system parallel to the building facade;\n'
+     ' b= system perpendicular to the building facade)">\n'
+     '        <args>\n            <ATTR id="0xADDR"'
      ' name="material">\n                <ATOM id="0xADDR" name="S"'
      ' title="Steel"/>\n                <ATOM id="0xADDR" name="SL"'
      ' title="Cold-formed steel members"/>\n            </ATTR>\n'
@@ -418,8 +435,11 @@ taxonomy_strings = [
      '    </ATOM>\n</ATTR>\n'),
     ('MDD(S+SL;HYB(M+ADO;W+WHE))/LFM+DCW:0.4', None, None,
      '<ATTR id="0xADDR" name="material">\n    <ATOM id="0xADDR"'
-     ' name="MDD" title="Different materials in the two'
-     ' directions">\n        <args>\n            <ATTR id="0xADDR"'
+     ' name="MDD" title="MDD(sys_a;sys_b), different'
+     ' materials in the two directions\n'
+     '(a= system parallel to the building facade;\n'
+     ' b= system perpendicular to the building facade)">\n'
+     '        <args>\n            <ATTR id="0xADDR"'
      ' name="material">\n                <ATOM id="0xADDR" name="S"'
      ' title="Steel"/>\n                <ATOM id="0xADDR" name="SL"'
      ' title="Cold-formed steel members"/>\n            </ATTR>\n'
@@ -448,8 +468,11 @@ taxonomy_strings = [
 
     ('LDD(DCW:0.4+LFM;DCW:0.8+LFM)', None, 'LDD(LFM+DCW:0.4;LFM+DCW:0.8)',
      '<ATTR id="0xADDR" name="llrs">\n    <ATOM id="0xADDR"'
-     ' name="LDD" title="Different types of llrs in the two'
-     ' directions">\n        <args>\n            <ATTR id="0xADDR"'
+     ' name="LDD" title="LDD(sys_a;sys_b), different'
+     ' types of LLRS in the two directions\n'
+     '(a= system parallel to the building facade;\n'
+     ' b= system perpendicular to the building facade)">\n'
+     '        <args>\n            <ATTR id="0xADDR"'
      ' name="llrs">\n                <ATOM id="0xADDR" name="LFM"'
      ' title="Moment frame"/>\n                <ATOM id="0xADDR"'
      ' name="DCW" title="Columns-Wall density">\n'
@@ -473,6 +496,43 @@ taxonomy_strings = [
      'DCW:0.4)]: for atom [LDD(DCW:0.4+LFM;LFM+DCW:0.4)] identical'
      ' arguments are denied [LFM+DCW:0.4].', '')
      ]
+}
+taxonomy_strings['4.0'] = copy.deepcopy(taxonomy_strings['3.3'])
+
+def idx_by_taxstr(arr, taxstr):
+    ret_arr = [idx for idx, val in enumerate(arr) if val[0] == taxstr]
+    return ret_arr[0]
+
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI+IRP(TOR+REC)')] = (
+    'IRI+IRP(TOR+REC)', 'Attribute [IRI+IRP(TOR+REC)]: atom IRI requires at least'
+    ' 1 argument, 0 found [IRI].')
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI+IRP(TOR;REC)')] = (
+    'IRI+IRP(TOR;REC)', 'Attribute [IRI+IRP(TOR;REC)]: atom IRI requires at least'
+    ' 1 argument, 0 found [IRI].')
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI+IRP(TOR;CHV)')] = (
+    'IRI+IRP(TOR;CHV)', 'Attribute [IRI+IRP(TOR;CHV)]: atom IRI requires at least'
+    ' 1 argument, 0 found [IRI].')
+
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI(TOR)')] = (
+    'IRI(TOR)', None, None, '<ATTR id="0xADDR" name="irregularity">\n'
+    '    <ATOM id="0xADDR" name="IRI" title="Irregular structure">\n'
+    '        <args>\n'
+    '            <ATOM id="0xADDR" name="TOR" title="Torsion eccentricity"/>\n'
+    '        </args>\n'
+    '    </ATOM>\n'
+    '</ATTR>\n')
+
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI(TOR;SET;CHV)')] = (
+    'IRI(TOR;SET;CHV)', None, None, '<ATTR id="0xADDR" name="irregularity">\n'
+    '    <ATOM id="0xADDR" name="IRI" title="Irregular structure">\n'
+    '        <args>\n'
+    '            <ATOM id="0xADDR" name="TOR" title="Torsion eccentricity"/>\n'
+    '            <ATOM id="0xADDR" name="SET" title="Setback"/>\n'
+    '            <ATOM id="0xADDR" name="CHV" title="Change in vertical'
+    ' structure (includes large overhangs)"/>\n'
+    '        </args>\n'
+    '    </ATOM>\n'
+    '</ATTR>\n')
 
 
 def to_log(s_exp):
@@ -492,39 +552,40 @@ class ValidateTestCase(unittest.TestCase):
     def test(self):
         self.maxDiff = None
         only_success = (os.getenv('ONLY_SUCCESS', 'False') == 'True')
-        gt = GemTaxonomy()
-        for tax_in in taxonomy_strings:
-            tax = [None] * 6
-            for idx, tax_val in enumerate(tax_in):
-                tax[idx] = tax_val
-            if only_success and tax[1] is not None:
-                continue
+        for vers in test_vers_range:
+            gt = GemTaxonomy(vers=vers)
+            for tax_in in taxonomy_strings[vers]:
+                tax = [None] * 6
+                for idx, tax_val in enumerate(tax_in):
+                    tax[idx] = tax_val
+                if only_success and tax[1] is not None:
+                    continue
 
-            if tax[1] is not None and tax[2] is None:
-                print('Test: "%s", expected: "%s"' %
-                      to_log(tax))
-            elif tax[1] is not None and tax[2] is not None:
-                print('Test: "%s", expected: "%s", '
-                      'suggested canonical: "%s"' %
-                      (to_log(tax) + (tax[2],)))
+                if tax[1] is not None and tax[2] is None:
+                    print('Test: "%s", expected: "%s"' %
+                          to_log(tax))
+                elif tax[1] is not None and tax[2] is not None:
+                    print('Test: "%s", expected: "%s", '
+                          'suggested canonical: "%s"' %
+                          (to_log(tax) + (tax[2],)))
 
-            try:
-                _, _, output = gt.validate(tax[0])
-                self.assertEqual(
-                    tax[1], None,
-                    msg='Expected "%s" but not detected' %
-                    (tax[1],))
-                if output['is_canonical'] is False:
+                try:
+                    _, _, output = gt.validate(tax[0])
                     self.assertEqual(
-                        output['canonical'], tax[2],
-                        msg=('Expected canonical as '
-                             '"%s" retrieved "%s"' %
-                             (output['canonical'], tax[2])))
-            except ValueError as exc:
-                self.assertEqual(
-                    str(exc), tax[1],
-                    msg='Expected "%s" Found "%s"' %
-                    (tax[1], str(exc)))
+                        tax[1], None,
+                        msg='Expected "%s" but not detected' %
+                        (tax[1],))
+                    if output['is_canonical'] is False:
+                        self.assertEqual(
+                            output['canonical'], tax[2],
+                            msg=('Expected canonical as '
+                                 '"%s" retrieved "%s"' %
+                                 (output['canonical'], tax[2])))
+                except ValueError as exc:
+                    self.assertEqual(
+                        str(exc), tax[1],
+                        msg='Expected "%s" Found "%s"' %
+                        (tax[1], str(exc)))
 
 
 class ValidateSuccessOnlyTestCase(ValidateTestCase):
@@ -546,16 +607,18 @@ class ReprTestCase(unittest.TestCase):
     #     tr -d '\n' ; echo
     def test(self):
         self.maxDiff = None
-        gt = GemTaxonomy()
-        for tax in taxonomy_strings:
-            if tax[1] is not None:
-                continue
+        for vers in test_vers_range:
+            gt = GemTaxonomy(vers=vers)
 
-            _, l_attrs_canon, output = gt.validate(tax[0])
-            repr = gt.logic_print(l_attrs_canon)
-            repr = re.sub('0x[0-9a-f]+', '0xADDR', repr)
-            # print('trepr: [%s]' % repr)
-            self.assertEqual(repr, tax[3])
+            for tax in taxonomy_strings[vers]:
+                if tax[1] is not None:
+                    continue
+
+                _, l_attrs_canon, output = gt.validate(tax[0])
+                repr = gt.logic_print(l_attrs_canon)
+                repr = re.sub('0x[0-9a-f]+', '0xADDR', repr)
+                # print('trepr: [%s]' % repr)
+                self.assertEqual(repr, tax[3])
 
 
 class ExplainTestCase(unittest.TestCase):
@@ -564,13 +627,15 @@ class ExplainTestCase(unittest.TestCase):
     #     tr -d '\n' ; echo
     def test(self):
         self.maxDiff = None
-        gt = GemTaxonomy()
-        for tax in taxonomy_strings:
-            if tax[1] is not None:
-                continue
-            # print('tzero: [%s]' % tax[0])
+        for vers in test_vers_range:
+            gt = GemTaxonomy(vers=vers)
 
-            gt.explain(tax[0])
-            gt.explain(tax[0], fmt='textsingleline')
-            gt.explain(tax[0], fmt='textmultiline')
-            gt.explain(tax[0], fmt='json')
+            for tax in taxonomy_strings[vers]:
+                if tax[1] is not None:
+                    continue
+                # print('tzero: [%s]' % tax[0])
+
+                gt.explain(tax[0])
+                gt.explain(tax[0], fmt='textsingleline')
+                gt.explain(tax[0], fmt='textmultiline')
+                gt.explain(tax[0], fmt='json')
