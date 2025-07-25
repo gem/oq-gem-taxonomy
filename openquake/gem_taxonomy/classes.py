@@ -50,35 +50,42 @@ class GemTaxonomy:
 
     class INFO_OUT_TYPE:
         TEXT = 1
-        JSON = 2
+        DICT = 2
+        JSON = 3
 
         DICT = {
             'text': TEXT,
+            'dict': DICT,
             'json': JSON,
         }
 
     # method to test package infrastructure
     @staticmethod
     def info(fmt='text'):
-        taxonomy_version = '3.3'
         gtd = GemTaxonomyData()
-        tax = gtd.load(taxonomy_version)
+        tax_default = gtd.load()
         if fmt == 'text':
             s = '''GemTaxonomy Info
 ----------------
 '''
-            s += '  GemTaxonomy Package     - v. %s\n' % __version__
-            s += '  GemTaxonomyData Package - v. %s\n' % GTD_vers
-            s += '  Loaded Taxonomy Data    - v. %s\n' % taxonomy_version
-            s += '  Atoms number            -    %d\n' % len(tax['Atom'])
+            s += '  GemTaxonomy Package       - %s\n' % __version__
+            s += '  GemTaxonomyData Package   - %s\n' % GTD_vers
+            s += '  Default Taxonomy Data     - %s\n' % gtd.DEFAULT_VERSION
+            s += '  Available Taxonomies Data - %s\n' % ", ".join(gtd.AVAILABLE_VERSIONS)
+            s += '  Atoms number              - %d\n' % len(tax_default['Atom'])
             return s
-        elif fmt == 'dict':
-            return {
+        elif fmt == 'dict' or fmt == 'json':
+            ret = {
                 'gem_taxonomy_version': __version__,
                 'gem_taxonomy_data_version': GTD_vers,
-                'gem_taxonomy_data_content_version': taxonomy_version,
-                'gem_taxonomy_data_atoms_number': len(tax['Atom']),
+                'gem_taxonomy_data_default_version': gtd.DEFAULT_VERSION,
+                'gem_taxonomy_data_available_versions': gtd.AVAILABLE_VERSIONS,
+                'gem_taxonomy_data_atoms_number': len(tax_default['Atom']),
             }
+            if fmt == 'dict':
+                return ret
+            elif fmt == 'json':
+                return json.dumps(ret)
 
     def logic_print(self, attrs):
         self.LogicIndSet(0)
@@ -465,7 +472,7 @@ class GemTaxonomy:
     def __init__(self, vers='3.3'):
         self.LogicIndentation = 0
 
-        if vers == '3.3':
+        if vers == '3.3' or vers == '4.0':
             self.taxo_grammar = Grammar(r'''
                 taxo = "UNK" / ( attr ( "/" attr )* )
                 attr = atom ( "+" atom )*

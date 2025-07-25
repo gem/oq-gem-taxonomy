@@ -53,12 +53,8 @@ def info():
 
     args = parser.parse_args()
 
-    ret = GemTaxonomy.info(fmt=('dict' if args.format == 'json'
-                                else args.format))
-    if args.format == 'json':
-        print(json.dumps(ret))
-    else:
-        print(ret)
+    ret = GemTaxonomy.info(fmt=args.format)
+    print(ret)
 
 
 def validate():
