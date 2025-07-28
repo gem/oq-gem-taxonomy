@@ -59,9 +59,24 @@ class GemTaxonomy:
             'json': JSON,
         }
 
+    @classmethod
+    @property
+    def default_version(cls):
+        return GemTaxonomyData.DEFAULT_VERSION
+
+    @classmethod
+    @property
+    def available_versions(cls):
+        return GemTaxonomyData.AVAILABLE_VERSIONS
+
+    @classmethod
+    @property
+    def gtd_version(cls):
+        return GTD_vers
+        
     # method to test package infrastructure
-    @staticmethod
-    def info(fmt='text'):
+    @classmethod
+    def info(cls, fmt='text'):
         gtd = GemTaxonomyData()
         tax_default = gtd.load()
         if fmt == 'text':
@@ -69,9 +84,9 @@ class GemTaxonomy:
 ----------------
 '''
             s += '  GemTaxonomy Package       - %s\n' % __version__
-            s += '  GemTaxonomyData Package   - %s\n' % GTD_vers
-            s += '  Default Taxonomy Data     - %s\n' % gtd.DEFAULT_VERSION
-            s += '  Available Taxonomies Data - %s\n' % ", ".join(gtd.AVAILABLE_VERSIONS)
+            s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version
+            s += '  Default Taxonomy Data     - %s\n' % cls.default_version
+            s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_versions)
             s += '  Atoms number              - %d\n' % len(tax_default['Atom'])
             return s
         elif fmt == 'dict' or fmt == 'json':

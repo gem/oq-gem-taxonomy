@@ -29,6 +29,10 @@ from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 
+def _tax_help():
+    return ", ".join([
+        '%s (default)' if x == GemTaxonomy.default_version else '%s' for
+        x in GemTaxonomy.available_versions])
 
 def info():
     format_default = GemTaxonomy.INFO_OUT_TYPE.TEXT
