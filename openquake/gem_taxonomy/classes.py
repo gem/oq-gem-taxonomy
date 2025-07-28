@@ -60,12 +60,12 @@ class GemTaxonomy:
 
     @classmethod
     @property
-    def default_version(cls):
+    def default_tax_version(cls):
         return GemTaxonomyData.DEFAULT_TAX_VERSION
 
     @classmethod
     @property
-    def available_versions(cls):
+    def available_tax_versions(cls):
         return GemTaxonomyData.AVAILABLE_TAX_VERSIONS
 
     @classmethod

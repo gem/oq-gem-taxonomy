@@ -30,9 +30,10 @@ from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 
 def _tax_help():
-    return ", ".join([
-        '%s (default)' if x == GemTaxonomy.default_version else '%s' for
-        x in GemTaxonomy.available_versions])
+    return ("use different taxonomy version than default (%s),"
+            " acceptable values are %s" % (
+                GemTaxonomy.default_tax_version, ", ".join(
+                    [x for x in GemTaxonomy.available_tax_versions])))
 
 def info():
     format_default = GemTaxonomy.INFO_OUT_TYPE.TEXT
@@ -42,7 +43,7 @@ def info():
         GemTaxonomy.INFO_OUT_TYPE.DICT.keys()])
 
     parser = argparse.ArgumentParser(
-        description='Info about taxonomy string tools (version 3.3).')
+        description='Info about taxonomy string tools.')
     parser.add_argument(
         '-f', '--format',
         help=formats_str,
@@ -60,10 +61,15 @@ def info():
     ret = GemTaxonomy.info(fmt=args.format)
     print(ret)
 
-
+# GemTaxonomy.default_version
 def validate():
     parser = argparse.ArgumentParser(
-        description='Validate taxonomy string (version 3.3).')
+        description='Validate taxonomy string.')
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         'taxonomy_str', type=str, help='The taxonomy string to validate')
     parser.add_argument(
@@ -80,7 +86,7 @@ def validate():
 
     args = parser.parse_args()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     try:
         _, _, report = gt.validate(args.taxonomy_str)
@@ -106,6 +112,11 @@ def explain():
     parser = argparse.ArgumentParser(
         description='Validate taxonomy string (version 3.3).')
     parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
+    parser.add_argument(
         'taxonomy_str', type=str, help='The taxonomy string to validate')
     parser.add_argument(
         '-f', '--format',
@@ -121,7 +132,7 @@ def explain():
 
     args = parser.parse_args()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     try:
         fmt, expl, val_reply = gt.explain(args.taxonomy_str, fmt=args.format)
@@ -228,6 +239,11 @@ note:
     "filename|row_num|column|original_taxonomy|1|error_message"'''),
         formatter_class=RawTextHelpFormatter
     )
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         '-C', '--canonical', action='store_true',
         help='return 0 if taxonomy strings are all canonical GEM taxonomy'
@@ -341,7 +357,7 @@ note:
         print("cols4files", file=sys.stderr)
         pprint(cols4files, stream=sys.stderr)
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     if args.preprocess:
         prep_proc = subprocess.Popen([args.preprocess[0]],
@@ -573,6 +589,11 @@ def specs2graph():
     parser = argparse.ArgumentParser(
         description='Create graph of taxonomy specifications (version 3.3).')
     parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
+    parser.add_argument(
         '-d', '--dot', action='store_true',
         help='generate a gragh in .dot format')
     parser.add_argument('-V', '--version', action='version',
@@ -582,7 +603,7 @@ def specs2graph():
     args = parser.parse_args()
     out_tree = OrderedDict()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
     for attr in gt.tax['Attribute']:
         attr_tree = OrderedDict()
         out_tree[("/%s/" % attr['title'])] = attr_tree
