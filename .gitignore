@@ -1,4 +1,5 @@
 /ETAGS
+/*.whl
 /venv*
 /.coverage
 /dist/
