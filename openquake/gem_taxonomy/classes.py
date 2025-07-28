@@ -24,8 +24,7 @@ from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 from openquake.gem_taxonomy_data import GemTaxonomyData
-from openquake.gem_taxonomy_data import __version__ as GTD_vers
-from .version import __version__
+from .version import __version__ as GemTaxonomyVersion
 
 #
 #  TODO:
@@ -62,17 +61,17 @@ class GemTaxonomy:
     @classmethod
     @property
     def default_version(cls):
-        return GemTaxonomyData.DEFAULT_VERSION
+        return GemTaxonomyData.DEFAULT_TAX_VERSION
 
     @classmethod
     @property
     def available_versions(cls):
-        return GemTaxonomyData.AVAILABLE_VERSIONS
+        return GemTaxonomyData.AVAILABLE_TAX_VERSIONS
 
     @classmethod
     @property
     def gtd_version(cls):
-        return GTD_vers
+        return GemTaxonomyData.__version__
         
     # method to test package infrastructure
     @classmethod
@@ -83,7 +82,7 @@ class GemTaxonomy:
             s = '''GemTaxonomy Info
 ----------------
 '''
-            s += '  GemTaxonomy Package       - %s\n' % __version__
+            s += '  GemTaxonomy Package       - %s\n' % GemTaxonomyVersion
             s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version
             s += '  Default Taxonomy Data     - %s\n' % cls.default_version
             s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_versions)
@@ -91,10 +90,10 @@ class GemTaxonomy:
             return s
         elif fmt == 'dict' or fmt == 'json':
             ret = {
-                'gem_taxonomy_version': __version__,
-                'gem_taxonomy_data_version': GTD_vers,
-                'gem_taxonomy_data_default_version': gtd.DEFAULT_VERSION,
-                'gem_taxonomy_data_available_versions': gtd.AVAILABLE_VERSIONS,
+                'gem_taxonomy_version': GemTaxonomyVersion,
+                'gem_taxonomy_data_version': cls.gtd_version,
+                'gem_taxonomy_data_default_version': cls.default_version,
+                'gem_taxonomy_data_available_versions': cls.available_versions,
                 'gem_taxonomy_data_atoms_number': len(tax_default['Atom']),
             }
             if fmt == 'dict':
