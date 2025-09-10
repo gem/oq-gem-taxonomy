@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "openquake.gem-taxonomy"
@@ -8,10 +8,11 @@ dynamic = ["version"]
 
 dependencies = [
    "openquake.gem-taxonomy-data @ git+https://github.com/gem/oq-gem-taxonomy-data.git@v1.4.1",
-   "parsimonious == 0.10.0"
+   "parsimonious == 0.10.0",
+   "setuptools>=65,<81"
 ]
 
-requires-python = ">=3"
+requires-python = ">=3.11"
 authors = [
   {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
 ]
@@ -20,30 +21,22 @@ maintainers = [
 ]
 description = "Openquake Gem Taxonomy - Package to manage GEM Building Taxonomy strings"
 readme = "README.md"
-license = {file = "LICENSE.txt"}
+license = {file = "LICENSE"}
 keywords = ["GEM", "taxonomy", "building", "standard", "openquake"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
 
-[tool.setuptools]
-include-package-data = false
+ 
 
-[tool.setuptools.packages.find]
-namespaces = true
-where = ["."]
-
-[tool.setuptools.dynamic]
-version = {attr = "openquake.gem_taxonomy.version.__version__"}
-
-[tool.distutils.egg_info]
-egg_base = ".egg_dir"
-
-[project.optional-dependencies]
+[dependency-groups]
 test = [
-   "pytest == 8.3.3",
-   "pytest-cov == 6.0.0"
+  "pytest == 8.3.3",
+  "pytest-cov == 6.0.0"
+]
+dev = [
+  "ipykernel"
 ]
 
 [project.urls]
@@ -69,3 +62,12 @@ Repository = "https://github.com/gem/oq-gem-taxonomy"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
+
+[tool.hatch.version]
+path = "openquake/gem_taxonomy/version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["openquake"]
