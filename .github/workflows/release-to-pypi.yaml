@@ -1,0 +1,119 @@
+name: Publish Python 🐍 distribution 📦 to PyPI or TestPyPI
+on:
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Branch of gem/oq-gem-taxonomy repository
+        default: main
+        required: true
+      target:
+        type: choice
+        description: |
+          "test": publish on Test PyPI, "pypi": publish on public PyPI
+        required: true
+        options:
+        - test
+        - pypi
+        default: test
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
+  schedule:
+    - cron: "30 9 * * *"
+
+jobs:
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Show parameters
+      run: |
+        echo "git commit: $GITHUB_SHA"
+        echo "build number: ${{ github.run_number }}"
+        echo "git-ref: ${{ github.event.inputs.git-ref }}"
+        echo "target: ${{ github.event.inputs.target }}"
+        echo "debug_enabled: ${{ github.event.inputs.debug_enabled }}"
+    - name: Clone Repository (Latest)
+      uses: actions/checkout@v6
+      if: github.event.inputs.git-ref == ''
+    - name: Clone Repository (Custom Ref)
+      uses: actions/checkout@v6
+      if: github.event.inputs.git-ref != ''
+      with:
+        ref: ${{ github.event.inputs.git-ref }}
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Setup debugging session
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 35
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+    # Append a devXY (where XY is the Jenkins build ID if destination is the testing repo
+    # to make testing possible even if a same release version (i.e. 2.2.0)is already
+    # on the test repo. Whe use devXY to be compliant with PEP440 (i.e. no git has allowed)
+    - name: Append a ".dev<BUILD_NUMBER>" if the testing repo
+      env:
+        BUILD_NUMBER: ${{ github.run_number }}
+      run: |
+        sed -i "s/\(^__version__ = '[^']\+\)'/\1.dev${BUILD_NUMBER}'/g" openquake/gem_taxonomy_data/__init__.py
+      if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'test') || github.event_name == 'schedule' }}
+    - name: Install pypa/build
+      run: |
+        python3 -m pip install build --user
+    - name: Build a binary wheel and a source tarball
+      run: |
+        cp README.md README.no_abs.md
+        ./helpers/abs_readme.sh "${{ github.event.inputs.git-ref }}"
+        python3 -m build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v5
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-testpypi:
+    name: Publish Python 🐍 distribution 📦 to TestPyPI
+    needs:
+    - build
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'test') || github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/openquake.gem-taxonomy
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: false
+        repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: Publish Python 🐍 distribution 📦 to PyPI
+    needs:
+    - build
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'pypi' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/openquake.gem-taxonomy
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
