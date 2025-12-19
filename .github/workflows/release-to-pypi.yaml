@@ -21,7 +21,7 @@ on:
         required: false
         default: false
   schedule:
-    - cron: "30 9 * * *"
+    - cron: "0 6 * * *"
 
 jobs:
   build:
@@ -59,7 +59,7 @@ jobs:
       env:
         BUILD_NUMBER: ${{ github.run_number }}
       run: |
-        sed -i "s/\(^__version__ = '[^']\+\)'/\1.dev${BUILD_NUMBER}'/g" openquake/gem_taxonomy_data/__init__.py
+        sed -i "s/\(^__version__ = '[^']\+\)'/\1.dev${BUILD_NUMBER}'/g" openquake/gem_taxonomy/__version__.py
       if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'test') || github.event_name == 'schedule' }}
     - name: Install pypa/build
       run: |
