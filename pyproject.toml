@@ -1,30 +1,30 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
-build-backend = "setuptools.build_meta"
+requires = ['setuptools >= 61.0']
+build-backend = 'setuptools.build_meta'
 
 [project]
-name = "openquake.gem-taxonomy"
-dynamic = ["version"]
+name = 'openquake.gem-taxonomy'
+dynamic = ['version']
 
 dependencies = [
-   "openquake.gem-taxonomy-data ~= 1.4",
-   "parsimonious == 0.10.0"
+  'openquake.gem-taxonomy-data ~= 1.4',
+  'parsimonious == 0.10.0'
 ]
 
-requires-python = ">=3"
+requires-python = '>=3'
 authors = [
-  {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
+  {name = 'Matteo Nastasi', email = 'nastasi@openquake.org'},
 ]
 maintainers = [
-  {name = "Matteo Nastasi", email = "nastasi@openquake.org"},
+  {name = 'Matteo Nastasi', email = 'nastasi@openquake.org'},
 ]
-description = "Openquake Gem Taxonomy - Package to manage GEM Building Taxonomy strings"
-readme = "README.md"
-license = {file = "LICENSE.txt"}
-keywords = ["GEM", "taxonomy", "building", "standard", "openquake"]
+description = 'Openquake Gem Taxonomy - Package to manage GEM Building Taxonomy strings'
+readme = 'README.md'
+license = {file = 'LICENSE.txt'}
+keywords = ['GEM', 'taxonomy', 'building', 'standard', 'openquake']
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python"
+  'Development Status :: 4 - Beta',
+  'Programming Language :: Python'
 ]
 
 [tool.setuptools]
@@ -32,43 +32,43 @@ include-package-data = false
 
 [tool.setuptools.packages.find]
 namespaces = true
-where = ["."]
-include = ["openquake*"]
-exclude = ["build"]
+where = ['.']
+include = ['openquake*']
+exclude = ['build']
 
 [tool.setuptools.dynamic]
-version = {attr = "openquake.gem_taxonomy.version.__version__"}
+version = {attr = 'openquake.gem_taxonomy.version.__version__'}
 
 [tool.distutils.egg_info]
-egg_base = ".egg_dir"
+egg_base = '.egg_dir'
 
 [project.optional-dependencies]
 test = [
-   "flake8",
-   "pytest == 8.3.3",
-   "pytest-cov == 6.0.0"
+   'flake8',
+   'pytest == 8.3.3',
+   'pytest-cov == 6.0.0'
 ]
 
 [project.urls]
-# Homepage = "https://example.com"
-# Documentation = "https://readthedocs.org"
-Repository = "https://github.com/gem/oq-gem-taxonomy"
-"Bug Tracker" = "https://github.com/gem/oq-gem-taxonomy/issues"
-# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+# Homepage = 'https://example.com'
+# Documentation = 'https://readthedocs.org'
+Repository = 'https://github.com/gem/oq-gem-taxonomy'
+'Bug Tracker' = 'https://github.com/gem/oq-gem-taxonomy/issues'
+# Changelog = 'https://github.com/me/spam/blob/master/CHANGELOG.md'
 
 [project.scripts]
-"gem-taxonomy-info" = "openquake.gem_taxonomy.scripts:info"
-"gem-taxonomy-validate" = "openquake.gem_taxonomy.scripts:validate"
-"gem-taxonomy-explain" = "openquake.gem_taxonomy.scripts:explain"
-"gem-taxonomy-csv-validate" = "openquake.gem_taxonomy.scripts:csv_validate"
-"gem-taxonomy-specs2graph" = "openquake.gem_taxonomy.scripts:specs2graph"
+'gem-taxonomy-info' = 'openquake.gem_taxonomy.scripts:info'
+'gem-taxonomy-validate' = 'openquake.gem_taxonomy.scripts:validate'
+'gem-taxonomy-explain' = 'openquake.gem_taxonomy.scripts:explain'
+'gem-taxonomy-csv-validate' = 'openquake.gem_taxonomy.scripts:csv_validate'
+'gem-taxonomy-specs2graph' = 'openquake.gem_taxonomy.scripts:specs2graph'
 
 # [project.gui-scripts]
-# spam-gui = "spam:main_gui"
+# spam-gui = 'spam:main_gui'
 
-# [project.entry-points."spam.magical"]
-# tomatoes = "spam:main_tomatoes"
+# [project.entry-points.'spam.magical']
+# tomatoes = 'spam:main_tomatoes'
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q"
+minversion = '6.0'
+addopts = '-ra -q'
