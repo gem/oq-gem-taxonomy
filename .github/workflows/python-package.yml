@@ -38,8 +38,8 @@ jobs:
         python -m pip install --upgrade pip
         # python -m pip install flake8 pytest
         if [ "$BRANCH_NAME" != "main" ]; then
-            if [ "$(git ls-remote --heads git@github.com:gem/oq-gem-taxonomy-data.git "refs/heads/${BRANCH_NAME}")" != "" ]; then
-                sed -i "s/'openquake.gem-taxonomy-data .*/'openquake.gem-taxonomy-data @ git+ssh://git@github.com:gem/oq-gem-taxonomy-data.git@${BRANCH_NAME}'/g" pyproject.toml
+            if [ "$(git ls-remote --heads https://github.com/gem/oq-gem-taxonomy-data.git "refs/heads/${BRANCH_NAME}")" != "" ]; then
+                sed -i "s/'openquake.gem-taxonomy-data .*/'openquake.gem-taxonomy-data @ git+https://github.com/gem/oq-gem-taxonomy-data.git@${BRANCH_NAME}'/g" pyproject.toml
                 echo "=== modified pyproject.toml ==="
                 cat pyproject.toml
                 echo "=== end ==="
