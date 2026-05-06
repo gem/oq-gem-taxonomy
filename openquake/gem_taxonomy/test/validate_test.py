@@ -575,12 +575,12 @@ class ValidateTestCase(unittest.TestCase):
                     continue
 
                 if tax[1] is not None and tax[2] is None:
-                    print('Test: "%s", expected: "%s"' %
-                          to_log(tax))
+                    print('Ver. "%s", test: "%s", expected: "%s"' %
+                          ((vers,) + to_log(tax)))
                 elif tax[1] is not None and tax[2] is not None:
-                    print('Test: "%s", expected: "%s", '
+                    print('Ver. "%s", test: "%s", expected: "%s", '
                           'suggested canonical: "%s"' %
-                          (to_log(tax) + (tax[2],)))
+                          ((vers,) + to_log(tax) + (tax[2],)))
 
                 try:
                     _, _, output = gt.validate(tax[0])
