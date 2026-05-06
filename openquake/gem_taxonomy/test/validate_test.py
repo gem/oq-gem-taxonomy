@@ -542,6 +542,11 @@ taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI(TOR;SET;CHV)
     '    </ATOM>\n'
     '</ATTR>\n')
 
+taxonomy_strings['4.0'].append((
+    'MUR+ADO+CL', 'Attribute [MUR+ADO+CL]: atom [CL] denied by atom [ADO]'),)
+
+taxonomy_strings['4.0'].append((
+    'MCF+STDRE+MO', 'Attribute [MCF+STDRE+MO]: atom [MO] denied by atom [STDRE]'),)
 
 def to_log(s_exp):
     return ((s_exp[0], s_exp[1])

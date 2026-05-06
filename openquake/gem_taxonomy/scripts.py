@@ -110,7 +110,8 @@ def explain():
         GemTaxonomy.EXPL_OUT_TYPE.DICT.keys()])
 
     parser = argparse.ArgumentParser(
-        description='Validate taxonomy string (version 3.3).')
+        description='Validate taxonomy string (version %s).' %
+        GemTaxonomy.default_tax_version)
     parser.add_argument(
         '-t', '--taxonomy-vers', nargs=1,
         default=[GemTaxonomy.default_tax_version],
@@ -587,7 +588,8 @@ def _graph_dot(tree):
 
 def specs2graph():
     parser = argparse.ArgumentParser(
-        description='Create graph of taxonomy specifications (version 3.3).')
+        description='Create graph of taxonomy specifications (version %s).' %
+        GemTaxonomy.default_tax_version)
     parser.add_argument(
         '-t', '--taxonomy-vers', nargs=1,
         default=[GemTaxonomy.default_tax_version],

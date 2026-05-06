@@ -24,7 +24,7 @@ from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 from openquake.gem_taxonomy_data import GemTaxonomyData
-from .version import __version__ as GemTaxonomyVersion
+from .version import __version__ as gem_taxonomy_version
 
 #
 #  TODO:
@@ -61,17 +61,23 @@ class GemTaxonomy:
     @classmethod
     @property
     def default_tax_version(cls):
-        return GemTaxonomyData.DEFAULT_TAX_VERSION
+        return GemTaxonomyData.DEFAULT_TAX_VERSION.split('.')[0]
 
     @classmethod
     @property
     def available_tax_versions(cls):
-        return GemTaxonomyData.AVAILABLE_TAX_VERSIONS
+        ret = []
+        for ver in GemTaxonomyData.AVAILABLE_TAX_VERSIONS:
+            els = ver.split('.')
+            for idx, el in enumerate(els):
+                ret += ['.'.join(els[0:idx+1])]
+
+        return ret
 
     @classmethod
     @property
     def gtd_version(cls):
-        return GemTaxonomyData.__version__
+        return GemTaxonomyData.version
         
     # method to test package infrastructure
     @classmethod
@@ -82,7 +88,7 @@ class GemTaxonomy:
             s = '''GemTaxonomy Info
 ----------------
 '''
-            s += '  GemTaxonomy Package       - %s\n' % GemTaxonomyVersion
+            s += '  GemTaxonomy Package       - %s\n' % gem_taxonomy_version
             s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version
             s += '  Default Taxonomy Data     - %s\n' % cls.default_tax_version
             s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_tax_versions)
@@ -90,7 +96,7 @@ class GemTaxonomy:
             return s
         elif fmt == 'dict' or fmt == 'json':
             ret = {
-                'gem_taxonomy_version': GemTaxonomyVersion,
+                'gem_taxonomy_version': gem_taxonomy_version,
                 'gem_taxonomy_data_version': cls.gtd_version,
                 'gem_taxonomy_data_default_tax_version': cls.default_tax_version,
                 'gem_taxonomy_data_available_tax_versions': cls.available_tax_versions,
@@ -483,8 +489,13 @@ class GemTaxonomy:
 
             return ret
 
-    def __init__(self, vers='3.3'):
+    def __init__(self, vers='4'):
         self.LogicIndentation = 0
+
+        if vers == '3':
+            vers = '3.3'
+        elif vers == '4':
+            vers = '4.0'
 
         if vers == '3.3' or vers == '4.0':
             self.taxo_grammar = Grammar(r'''
@@ -504,6 +515,9 @@ class GemTaxonomy:
                 range = integer_value "-" integer_value
                 integer_value = ~r"[0-9-]" ~r"[0-9]*"
                 ''')
+        else:
+            raise ValueError('Allowed versions are currently %s' % ", ".join(
+                GemTaxonomy.available_tax_versions))
 
         self.gtd = GemTaxonomyData()
         self.tax = self.gtd.load(vers)
@@ -1111,8 +1125,8 @@ class GemTaxonomy:
                 for deny_name_in in atom_names_in:
                     if deny_name_in in self.tax['AtomsDeny'][atom_name_in]:
                         raise ValueError(
-                            'Attribute [%s] denied by atom: [%s]' %
-                            (attr_base, deny_name_in))
+                            'Attribute [%s]: atom [%s] denied by atom [%s]' %
+                            (attr_base, atom_name_in, deny_name_in))
 
             if atom_name_in not in self.tax['AtomsDeps']:
                 continue
