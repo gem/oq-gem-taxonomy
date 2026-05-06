@@ -1106,6 +1106,14 @@ class GemTaxonomy:
             # end atoms loop
 
         for atom_name_in in atom_names_in:
+            # constraint deny management
+            if atom_name_in in self.tax['AtomsDeny']:
+                for deny_name_in in atom_names_in:
+                    if deny_name_in in self.tax['AtomsDeny'][atom_name_in]:
+                        raise ValueError(
+                            'Attribute [%s] denied by atom: [%s]' %
+                            (attr_base, deny_name_in))
+
             if atom_name_in not in self.tax['AtomsDeps']:
                 continue
             else:

@@ -503,6 +503,14 @@ def idx_by_taxstr(arr, taxstr):
     ret_arr = [idx for idx, val in enumerate(arr) if val[0] == taxstr]
     return ret_arr[0]
 
+taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'MIX(RES;COM;GOV)')] = (
+    'MIX(RES;COM;GOV)', None, None, '<ATTR id="0xADDR" name="occupancy">\n'
+    '    <ATOM id="0xADDR" name="MIX" title="Mixed occupancy types">\n        <args>\n'
+    '            <ATOM id="0xADDR" name="RES" title="Residential"/>\n'
+    '            <ATOM id="0xADDR" name="COM" title="Commercial and'
+    ' public"/>\n            <ATOM id="0xADDR" name="GOV"'
+    ' title="Government"/>\n        </args>\n    </ATOM>\n</ATTR>\n')
+
 taxonomy_strings['4.0'][idx_by_taxstr(taxonomy_strings['4.0'], 'IRI+IRP(TOR+REC)')] = (
     'IRI+IRP(TOR+REC)', 'Attribute [IRI+IRP(TOR+REC)]: atom IRI requires at least'
     ' 1 argument, 0 found [IRI].')
