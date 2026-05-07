@@ -18,7 +18,6 @@
 import os
 import sys
 import csv
-from collections import OrderedDict
 import json
 import glob
 import argparse
@@ -501,7 +500,7 @@ def _graph_check_args(gt, atom, atom_leaf):
             ',')[0][1:-1]
         args_title = "(%s)" % gt.tax[
             'AtomsGroupDict'][args_group_name]['title']
-        if not atom_leaf.check_child(args_title):
+        if not atom_leaf.exists_child(args_title):
             args_leaf = OutLeaf()
             atom_leaf.add_child(args_title, args_leaf)
     elif atom_args_type == 'filtered_attribute':
@@ -509,22 +508,21 @@ def _graph_check_args(gt, atom, atom_leaf):
             ',')[0][1:-1]
         args_title = "(/%s/)" % gt.tax[
             'AttributeDict'][args_attr_name]['title']
-        if not atom_leaf.check_child(args_title):
+        if not atom_leaf.exists_child(args_title):
             args_leaf = OutLeaf()
             atom_leaf.add_child(args_title, args_leaf)
 
-def _graph_check_deny(gt, atom, atom_tree):
+
+def _graph_check_deny(gt, atom, atom_leaf):
     if atom['name'] not in gt.tax['AtomsDeny']:
         return
 
-    atom['graph_deny_groups'] = []
     for deny in gt.tax['AtomsDeny'][atom['name']]:
-        print(deny)
-        deny_group = gt.tax['AtomDict'][deny]['group']
-        if deny_group not in atom['graph_deny_groups']:
-            atom['graph_deny_groups'].append(deny_group)
+        deny_group = gt.tax['AtomsGroupDict'][gt.tax['AtomDict'][deny]['group']]['title']
 
-    print('DENY: atom: [%s], group [%s]' % (atom['name'], atom['graph_deny_groups']))
+        if not atom_leaf.exists_deny(deny_group):
+            atom_leaf.add_deny(deny_group, OutLeaf(key=deny_group))
+
 
 def _graph_dive_deps(gt, atom_anc, atom_anc_leaf):
     for k, v in gt.tax['AtomsDeps'].items():
@@ -532,23 +530,27 @@ def _graph_dive_deps(gt, atom_anc, atom_anc_leaf):
             atom = gt.tax['AtomDict'][k]
             group_title = gt.tax['AtomsGroupDict'][
                 atom['group']]['title']
-            if atom_anc_leaf.check_child(group_title):
+            if atom_anc_leaf.exists_child(group_title):
                 atom_leaf = atom_anc_leaf.get_child(group_title)
             else:
                 atom_leaf = OutLeaf()
                 atom_anc_leaf.add_child(group_title, atom_leaf)
 
+            _graph_check_deny(gt, atom, atom_leaf)
             _graph_dive_deps(gt, gt.tax['AtomDict'][k],
                              atom_leaf)
     _graph_check_args(gt, atom_anc, atom_anc_leaf)
-    # _graph_check_deny(gt, atom_anc, atom_anc_leaf)
 
 
-def _graph_print(tree, spc=0):
-    for key, el in tree.items():
+def _graph_print(leaf, spc=0):
+    for key, el in leaf.items():
         if spc == 0:
             print()
-        print(" " * spc + key)
+        if el.denies:
+            denies = ', '.join(['[NOT IF %s]' % deny_key for deny_key in el.denies])
+        else:
+            denies = ''
+        print(" " * spc + key + ' ' + denies)
         if el:
             _graph_print(el, spc=(spc + 4))
 
@@ -600,12 +602,14 @@ def _graph_dot(tree):
 
 
 class OutLeaf:
-    def __init__(self, child=None, deny=None):
-        self.children = OrderedDict()
+    def __init__(self, key=None, child=None, deny=None):
+        if key:
+            self.key = key
+        self.children = {}
         if child:
             self.children[child[0]] = child[1]
 
-        self.denies = OrderedDict()
+        self.denies = {}
         if deny:
             self.denies[deny[0]] = deny[1]
 
@@ -625,29 +629,34 @@ class OutLeaf:
         else:
             raise StopIteration
 
-    def add_child(self, key, child):
-        self.children[key] = child
+    def set_name(self, name):
+        self.name = name
 
-    def add_deny(self, key, deny):
-        self.denies[key] = deny
+    def add_child(self, name, child):
+        child.set_name(name)
+        self.children[name] = child
 
-    def get_child(self, key):
-        if key in self.children:
-            return self.children[key]
+    def add_deny(self, name, deny):
+        deny.set_name(name)
+        self.denies[name] = deny
+
+    def get_child(self, name):
+        if name in self.children:
+            return self.children[name]
         else:
             return None
 
-    def get_deny(self, key):
-        if key in self.denies:
-            return self.denies[key]
+    def get_deny(self, name):
+        if name in self.denies:
+            return self.denies[name]
         else:
             return None
 
-    def check_child(self, child_key):
-        return (child_key in self.children)
+    def exists_child(self, child_name):
+        return (child_name in self.children)
 
-    def check_deny(self, deny_key):
-        return (deny_key in self.denies)
+    def exists_deny(self, deny_name):
+        return (deny_name in self.denies)
 
 
 def specs2graph():
@@ -682,7 +691,7 @@ def specs2graph():
             if atom['name'] not in gt.tax['AtomsDeps']:
                 group_title = gt.tax['AtomsGroupDict'][
                     atom['group']]['title']
-                if attr_leaf.check_child(group_title):
+                if attr_leaf.exists_child(group_title):
                     atom_leaf = attr_leaf.get_child(group_title)
                 else:
                     atom_leaf = OutLeaf()
