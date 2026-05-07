@@ -558,7 +558,8 @@ g_rank = []
 g_rank_els = []
 
 def _graph_dot_el(tree, parent_key=None, rank_level=0):
-    global g_rank, g_rank_els
+    global g_rank
+    global g_rank_els
 
     try:
         g_rank[rank_level]
