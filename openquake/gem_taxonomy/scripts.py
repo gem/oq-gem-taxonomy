@@ -583,6 +583,10 @@ def _graph_dot_el(tree, parent_key=None):
             if rank_els != '':
                 rank_els += ' -> '
             rank_els += '"%s"' % key
+        if el.denies:
+            for deny in el.denies:
+                print('    "%s" -> "%s" [color="red", arrowhead="box"]' % (
+                    deny, key))
         _graph_dot_el(el, parent_key=key)
 
     if not parent_key:
