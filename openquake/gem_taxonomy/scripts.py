@@ -489,7 +489,7 @@ note:
     sys.exit(ret_code)
 
 
-def _graph_check_args(gt, atom, atom_tree):
+def _graph_check_args(gt, atom, atom_leaf):
     if not atom['args']:
         return
 
@@ -501,34 +501,47 @@ def _graph_check_args(gt, atom, atom_tree):
             ',')[0][1:-1]
         args_title = "(%s)" % gt.tax[
             'AtomsGroupDict'][args_group_name]['title']
-        if args_title not in atom_tree:
-            args_tree = OrderedDict()
-            atom_tree[args_title] = args_tree
+        if not atom_leaf.check_child(args_title):
+            args_leaf = OutLeaf()
+            atom_leaf.add_child(args_title, args_leaf)
     elif atom_args_type == 'filtered_attribute':
         args_attr_name = atom_args_type_parts[1].split(
             ',')[0][1:-1]
         args_title = "(/%s/)" % gt.tax[
             'AttributeDict'][args_attr_name]['title']
-        if args_title not in atom_tree:
-            args_tree = OrderedDict()
-            atom_tree[args_title] = args_tree
+        if not atom_leaf.check_child(args_title):
+            args_leaf = OutLeaf()
+            atom_leaf.add_child(args_title, args_leaf)
 
+def _graph_check_deny(gt, atom, atom_tree):
+    if atom['name'] not in gt.tax['AtomsDeny']:
+        return
 
-def _graph_dive_deps(gt, atom_anc, atom_anc_tree):
+    atom['graph_deny_groups'] = []
+    for deny in gt.tax['AtomsDeny'][atom['name']]:
+        print(deny)
+        deny_group = gt.tax['AtomDict'][deny]['group']
+        if deny_group not in atom['graph_deny_groups']:
+            atom['graph_deny_groups'].append(deny_group)
+
+    print('DENY: atom: [%s], group [%s]' % (atom['name'], atom['graph_deny_groups']))
+
+def _graph_dive_deps(gt, atom_anc, atom_anc_leaf):
     for k, v in gt.tax['AtomsDeps'].items():
         if atom_anc['name'] in v:
             atom = gt.tax['AtomDict'][k]
             group_title = gt.tax['AtomsGroupDict'][
                 atom['group']]['title']
-            if group_title in atom_anc_tree:
-                atom_tree = atom_anc_tree[group_title]
+            if atom_anc_leaf.check_child(group_title):
+                atom_leaf = atom_anc_leaf.get_child(group_title)
             else:
-                atom_tree = OrderedDict()
-                atom_anc_tree[group_title] = atom_tree
+                atom_leaf = OutLeaf()
+                atom_anc_leaf.add_child(group_title, atom_leaf)
 
             _graph_dive_deps(gt, gt.tax['AtomDict'][k],
-                             atom_tree)
-    _graph_check_args(gt, atom_anc, atom_anc_tree)
+                             atom_leaf)
+    _graph_check_args(gt, atom_anc, atom_anc_leaf)
+    # _graph_check_deny(gt, atom_anc, atom_anc_leaf)
 
 
 def _graph_print(tree, spc=0):
@@ -559,7 +572,7 @@ def _graph_dot_el(tree, parent_key=None):
 
         if parent_key:
             if is_arg:
-                print('    "%s" -> "%s" [color="red"]' % (
+                print('    "%s" -> "%s" [color="green"]' % (
                     parent_key, key))
             else:
                 print('    "%s" -> "%s"' % (
@@ -586,6 +599,57 @@ def _graph_dot(tree):
     print('}')
 
 
+class OutLeaf:
+    def __init__(self, child=None, deny=None):
+        self.children = OrderedDict()
+        if child:
+            self.children[child[0]] = child[1]
+
+        self.denies = OrderedDict()
+        if deny:
+            self.denies[deny[0]] = deny[1]
+
+    def __iter__(self):
+        for child in self.children:
+            yield child
+
+    def items(self):
+        for key, child in self.children.items():
+            yield (key, child)
+
+    def __next__(self):
+        if self.a <= 20:
+            x = self.a
+            self.a += 1
+            return x
+        else:
+            raise StopIteration
+
+    def add_child(self, key, child):
+        self.children[key] = child
+
+    def add_deny(self, key, deny):
+        self.denies[key] = deny
+
+    def get_child(self, key):
+        if key in self.children:
+            return self.children[key]
+        else:
+            return None
+
+    def get_deny(self, key):
+        if key in self.denies:
+            return self.denies[key]
+        else:
+            return None
+
+    def check_child(self, child_key):
+        return (child_key in self.children)
+
+    def check_deny(self, deny_key):
+        return (deny_key in self.denies)
+
+
 def specs2graph():
     parser = argparse.ArgumentParser(
         description='Create graph of taxonomy specifications (version %s).' %
@@ -603,12 +667,12 @@ def specs2graph():
                         help='show application version and exit')
 
     args = parser.parse_args()
-    out_tree = OrderedDict()
+    out_leaf = OutLeaf()
 
     gt = GemTaxonomy(vers=args.taxonomy_vers[0])
     for attr in gt.tax['Attribute']:
-        attr_tree = OrderedDict()
-        out_tree[("/%s/" % attr['title'])] = attr_tree
+        attr_leaf = OutLeaf()
+        out_leaf.add_child(("/%s/" % attr['title']), attr_leaf)
 
         for atom in gt.tax['Atom']:
             # print(atom['attr'])
@@ -618,15 +682,15 @@ def specs2graph():
             if atom['name'] not in gt.tax['AtomsDeps']:
                 group_title = gt.tax['AtomsGroupDict'][
                     atom['group']]['title']
-                if group_title in attr_tree:
-                    atom_tree = attr_tree[group_title]
+                if attr_leaf.check_child(group_title):
+                    atom_leaf = attr_leaf.get_child(group_title)
                 else:
-                    atom_tree = OrderedDict()
-                    attr_tree[group_title] = atom_tree
+                    atom_leaf = OutLeaf()
+                    attr_leaf.add_child(group_title, atom_leaf)
 
-                _graph_dive_deps(gt, atom, atom_tree)
+                _graph_dive_deps(gt, atom, atom_leaf)
 
     if args.dot:
-        _graph_dot(out_tree)
+        _graph_dot(out_leaf)
     else:
-        _graph_print(out_tree)
+        _graph_print(out_leaf)
