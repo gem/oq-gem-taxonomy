@@ -554,10 +554,18 @@ def _graph_print(leaf, spc=0):
         if el:
             _graph_print(el, spc=(spc + 4))
 
+g_rank = []
+g_rank_els = []
 
-def _graph_dot_el(tree, parent_key=None):
-    rank = '    {rank = same;\n'
-    rank_els = ''
+def _graph_dot_el(tree, parent_key=None, rank_level=0):
+    global g_rank, g_rank_els
+
+    try:
+        g_rank[rank_level]
+    except IndexError:
+        g_rank.insert(rank_level, '\n    {\n        rank = same;\n        ')
+        g_rank_els.insert(rank_level, '')
+
     for key, el in tree.items():
         is_arg = False
         is_attr = False
@@ -579,21 +587,30 @@ def _graph_dot_el(tree, parent_key=None):
             else:
                 print('    "%s" -> "%s"' % (
                     parent_key, key))
-        else:
-            if rank_els != '':
-                rank_els += ' -> '
-            rank_els += '"%s"' % key
+
+        if not is_arg:
+            if g_rank_els[rank_level] != '':
+                g_rank_els[rank_level] += ' -> '
+            g_rank_els[rank_level] += '"%s"' % key
         if el.denies:
             for deny in el.denies:
                 print('    "%s" -> "%s" [color="red", arrowhead="box"]' % (
                     deny, key))
-        _graph_dot_el(el, parent_key=key)
+        _graph_dot_el(el, parent_key=key, rank_level=(rank_level + 1))
 
     if not parent_key:
-        rank += rank_els
-        rank += ' [ style=invis ]; rankdir = TB;\n'
-        rank += '    }'
-        print(rank)
+        for i in range(0, len(g_rank)):
+            if len(g_rank_els[i]) == 0:
+                continue
+            g_rank[i] += g_rank_els[i]
+            if '->' in g_rank_els[i]:
+                # NOTE: to show rank arrow uncomment the line below and comment the
+                #       next one
+                g_rank[i] += ' [ color=cyan ]'
+                # g_rank[i] += ' [ style=invis ]'
+            g_rank[i] += ';\n        rankdir = TB;\n'
+            g_rank[i] += '    }'
+            print(g_rank[i])
 
 
 def _graph_dot(tree):
