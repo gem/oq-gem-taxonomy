@@ -78,7 +78,7 @@ class GemTaxonomy:
     @property
     def gtd_version(cls):
         return GemTaxonomyData.version
-        
+
     # method to test package infrastructure
     @classmethod
     def info(cls, fmt='text'):

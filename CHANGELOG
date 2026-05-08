@@ -1,4 +1,19 @@
-openquake.gem-taxonomy (1.11.0)
+openquake.gem-taxonomy (1.12.0)
+
+  [Matteo Nastasi]
+  * Revert back namespace declaration after oq-engine packaging improvement.
+  * Add python 3.12 to test matrix
+  * Add action to automate release publication
+  * Add python dictionary format for 'gem-taxonomy-info' format
+  * Smart management of requested versions: 3, 3.3, 4 or 4.0 curently
+  * Add '-t|--taxonomy-vers <vers>' argument for custom command to specify the taxonomy
+    specifications version that you want to use
+  * Manage new 'deny' semantic from taxonomy specs in validation, explanation and graph
+    rappresentation
+
+ -- Matteo Nastasi (GEM Foundation) <nastasi@openquake.org>  Fri, 08 May 2026 13:34:41 +0000
+
+openquake.gem-taxonomy (1.11.1)
 
   [Matteo Nastasi]
   * Revert namespace declaration to the pkg_resources legacy style to be aligned with engine
