@@ -558,8 +558,6 @@ g_rank = []
 g_rank_els = []
 
 def _graph_dot_el(tree, parent_key=None, rank_level=0):
-    global g_rank, g_rank_els  # noqa: F824
-
     try:
         g_rank[rank_level]
     except IndexError:
