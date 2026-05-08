@@ -640,14 +640,6 @@ class OutLeaf:
         for key, child in self.children.items():
             yield (key, child)
 
-    def __next__(self):
-        if self.a <= 20:
-            x = self.a
-            self.a += 1
-            return x
-        else:
-            raise StopIteration
-
     def set_name(self, name):
         self.name = name
 
