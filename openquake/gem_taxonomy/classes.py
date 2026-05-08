@@ -24,8 +24,7 @@ from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 from openquake.gem_taxonomy_data import GemTaxonomyData
-from openquake.gem_taxonomy_data import __version__ as GTD_vers
-from .version import __version__
+from .version import __version__ as gem_taxonomy_version
 
 #
 #  TODO:
@@ -50,35 +49,63 @@ class GemTaxonomy:
 
     class INFO_OUT_TYPE:
         TEXT = 1
-        JSON = 2
+        DICT = 2
+        JSON = 3
 
         DICT = {
             'text': TEXT,
+            'dict': DICT,
             'json': JSON,
         }
 
+    @classmethod
+    @property
+    def default_tax_version(cls):
+        return GemTaxonomyData.DEFAULT_TAX_VERSION.split('.')[0]
+
+    @classmethod
+    @property
+    def available_tax_versions(cls):
+        ret = []
+        for ver in GemTaxonomyData.AVAILABLE_TAX_VERSIONS:
+            els = ver.split('.')
+            for idx, el in enumerate(els):
+                ret += ['.'.join(els[0:idx+1])]
+
+        return ret
+
+    @classmethod
+    @property
+    def gtd_version(cls):
+        return GemTaxonomyData.version
+        
     # method to test package infrastructure
-    @staticmethod
-    def info(fmt='text'):
-        taxonomy_version = '3.3'
+    @classmethod
+    def info(cls, fmt='text'):
         gtd = GemTaxonomyData()
-        tax = gtd.load(taxonomy_version)
+        tax_default = gtd.load()
         if fmt == 'text':
             s = '''GemTaxonomy Info
 ----------------
 '''
-            s += '  GemTaxonomy Package     - v. %s\n' % __version__
-            s += '  GemTaxonomyData Package - v. %s\n' % GTD_vers
-            s += '  Loaded Taxonomy Data    - v. %s\n' % taxonomy_version
-            s += '  Atoms number            -    %d\n' % len(tax['Atom'])
+            s += '  GemTaxonomy Package       - %s\n' % gem_taxonomy_version
+            s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version
+            s += '  Default Taxonomy Data     - %s\n' % cls.default_tax_version
+            s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_tax_versions)
+            s += '  Atoms number              - %d\n' % len(tax_default['Atom'])
             return s
-        elif fmt == 'dict':
-            return {
-                'gem_taxonomy_version': __version__,
-                'gem_taxonomy_data_version': GTD_vers,
-                'gem_taxonomy_data_content_version': taxonomy_version,
-                'gem_taxonomy_data_atoms_number': len(tax['Atom']),
+        elif fmt == 'dict' or fmt == 'json':
+            ret = {
+                'gem_taxonomy_version': gem_taxonomy_version,
+                'gem_taxonomy_data_version': cls.gtd_version,
+                'gem_taxonomy_data_default_tax_version': cls.default_tax_version,
+                'gem_taxonomy_data_available_tax_versions': cls.available_tax_versions,
+                'gem_taxonomy_data_atoms_number': len(tax_default['Atom']),
             }
+            if fmt == 'dict':
+                return ret
+            elif fmt == 'json':
+                return json.dumps(ret)
 
     def logic_print(self, attrs):
         self.LogicIndSet(0)
@@ -462,10 +489,15 @@ class GemTaxonomy:
 
             return ret
 
-    def __init__(self, vers='3.3'):
+    def __init__(self, vers='4'):
         self.LogicIndentation = 0
 
-        if vers == '3.3':
+        if vers == '3':
+            vers = '3.3'
+        elif vers == '4':
+            vers = '4.0'
+
+        if vers == '3.3' or vers == '4.0':
             self.taxo_grammar = Grammar(r'''
                 taxo = "UNK" / ( attr ( "/" attr )* )
                 attr = atom ( "+" atom )*
@@ -483,6 +515,9 @@ class GemTaxonomy:
                 range = integer_value "-" integer_value
                 integer_value = ~r"[0-9-]" ~r"[0-9]*"
                 ''')
+        else:
+            raise ValueError('Allowed versions are currently %s' % ", ".join(
+                GemTaxonomy.available_tax_versions))
 
         self.gtd = GemTaxonomyData()
         self.tax = self.gtd.load(vers)
@@ -1085,6 +1120,14 @@ class GemTaxonomy:
             # end atoms loop
 
         for atom_name_in in atom_names_in:
+            # constraint deny management
+            if atom_name_in in self.tax['AtomsDeny']:
+                for deny_name_in in atom_names_in:
+                    if deny_name_in in self.tax['AtomsDeny'][atom_name_in]:
+                        raise ValueError(
+                            'Attribute [%s]: atom [%s] denied by atom [%s]' %
+                            (attr_base, atom_name_in, deny_name_in))
+
             if atom_name_in not in self.tax['AtomsDeps']:
                 continue
             else:

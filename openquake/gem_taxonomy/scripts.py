@@ -18,7 +18,6 @@
 import os
 import sys
 import csv
-from collections import OrderedDict
 import json
 import glob
 import argparse
@@ -29,6 +28,11 @@ from parsimonious.exceptions import ParseError as ParsimParseError
 from parsimonious.exceptions import (IncompleteParseError as
                                      ParsimIncompleteParseError)
 
+def _tax_help():
+    return ("use different taxonomy version than default (%s),"
+            " acceptable values are %s" % (
+                GemTaxonomy.default_tax_version, ", ".join(
+                    [x for x in GemTaxonomy.available_tax_versions])))
 
 def info():
     format_default = GemTaxonomy.INFO_OUT_TYPE.TEXT
@@ -38,7 +42,7 @@ def info():
         GemTaxonomy.INFO_OUT_TYPE.DICT.keys()])
 
     parser = argparse.ArgumentParser(
-        description='Info about taxonomy string tools (version 3.3).')
+        description='Info about taxonomy string tools.')
     parser.add_argument(
         '-f', '--format',
         help=formats_str,
@@ -53,17 +57,18 @@ def info():
 
     args = parser.parse_args()
 
-    ret = GemTaxonomy.info(fmt=('dict' if args.format == 'json'
-                                else args.format))
-    if args.format == 'json':
-        print(json.dumps(ret))
-    else:
-        print(ret)
+    ret = GemTaxonomy.info(fmt=args.format)
+    print(ret)
 
-
+# GemTaxonomy.default_version
 def validate():
     parser = argparse.ArgumentParser(
-        description='Validate taxonomy string (version 3.3).')
+        description='Validate taxonomy string.')
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         'taxonomy_str', type=str, help='The taxonomy string to validate')
     parser.add_argument(
@@ -80,7 +85,7 @@ def validate():
 
     args = parser.parse_args()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     try:
         _, _, report = gt.validate(args.taxonomy_str)
@@ -104,7 +109,13 @@ def explain():
         GemTaxonomy.EXPL_OUT_TYPE.DICT.keys()])
 
     parser = argparse.ArgumentParser(
-        description='Validate taxonomy string (version 3.3).')
+        description='Validate taxonomy string (version %s).' %
+        GemTaxonomy.default_tax_version)
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         'taxonomy_str', type=str, help='The taxonomy string to validate')
     parser.add_argument(
@@ -121,7 +132,7 @@ def explain():
 
     args = parser.parse_args()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     try:
         fmt, expl, val_reply = gt.explain(args.taxonomy_str, fmt=args.format)
@@ -228,6 +239,11 @@ note:
     "filename|row_num|column|original_taxonomy|1|error_message"'''),
         formatter_class=RawTextHelpFormatter
     )
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         '-C', '--canonical', action='store_true',
         help='return 0 if taxonomy strings are all canonical GEM taxonomy'
@@ -341,7 +357,7 @@ note:
         print("cols4files", file=sys.stderr)
         pprint(cols4files, stream=sys.stderr)
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
 
     if args.preprocess:
         prep_proc = subprocess.Popen([args.preprocess[0]],
@@ -472,7 +488,7 @@ note:
     sys.exit(ret_code)
 
 
-def _graph_check_args(gt, atom, atom_tree):
+def _graph_check_args(gt, atom, atom_leaf):
     if not atom['args']:
         return
 
@@ -484,48 +500,70 @@ def _graph_check_args(gt, atom, atom_tree):
             ',')[0][1:-1]
         args_title = "(%s)" % gt.tax[
             'AtomsGroupDict'][args_group_name]['title']
-        if args_title not in atom_tree:
-            args_tree = OrderedDict()
-            atom_tree[args_title] = args_tree
+        if not atom_leaf.exists_child(args_title):
+            args_leaf = OutLeaf()
+            atom_leaf.add_child(args_title, args_leaf)
     elif atom_args_type == 'filtered_attribute':
         args_attr_name = atom_args_type_parts[1].split(
             ',')[0][1:-1]
         args_title = "(/%s/)" % gt.tax[
             'AttributeDict'][args_attr_name]['title']
-        if args_title not in atom_tree:
-            args_tree = OrderedDict()
-            atom_tree[args_title] = args_tree
+        if not atom_leaf.exists_child(args_title):
+            args_leaf = OutLeaf()
+            atom_leaf.add_child(args_title, args_leaf)
 
 
-def _graph_dive_deps(gt, atom_anc, atom_anc_tree):
+def _graph_check_deny(gt, atom, atom_leaf):
+    if atom['name'] not in gt.tax['AtomsDeny']:
+        return
+
+    for deny in gt.tax['AtomsDeny'][atom['name']]:
+        deny_group = gt.tax['AtomsGroupDict'][gt.tax['AtomDict'][deny]['group']]['title']
+
+        if not atom_leaf.exists_deny(deny_group):
+            atom_leaf.add_deny(deny_group, OutLeaf(key=deny_group))
+
+
+def _graph_dive_deps(gt, atom_anc, atom_anc_leaf):
     for k, v in gt.tax['AtomsDeps'].items():
         if atom_anc['name'] in v:
             atom = gt.tax['AtomDict'][k]
             group_title = gt.tax['AtomsGroupDict'][
                 atom['group']]['title']
-            if group_title in atom_anc_tree:
-                atom_tree = atom_anc_tree[group_title]
+            if atom_anc_leaf.exists_child(group_title):
+                atom_leaf = atom_anc_leaf.get_child(group_title)
             else:
-                atom_tree = OrderedDict()
-                atom_anc_tree[group_title] = atom_tree
+                atom_leaf = OutLeaf()
+                atom_anc_leaf.add_child(group_title, atom_leaf)
 
+            _graph_check_deny(gt, atom, atom_leaf)
             _graph_dive_deps(gt, gt.tax['AtomDict'][k],
-                             atom_tree)
-    _graph_check_args(gt, atom_anc, atom_anc_tree)
+                             atom_leaf)
+    _graph_check_args(gt, atom_anc, atom_anc_leaf)
 
 
-def _graph_print(tree, spc=0):
-    for key, el in tree.items():
+def _graph_print(leaf, spc=0):
+    for key, el in leaf.items():
         if spc == 0:
             print()
-        print(" " * spc + key)
+        if el.denies:
+            denies = ', '.join(['[NOT IF %s]' % deny_key for deny_key in el.denies])
+        else:
+            denies = ''
+        print(" " * spc + key + ' ' + denies)
         if el:
             _graph_print(el, spc=(spc + 4))
 
+g_rank = []
+g_rank_els = []
 
-def _graph_dot_el(tree, parent_key=None):
-    rank = '    {rank = same;\n'
-    rank_els = ''
+def _graph_dot_el(tree, parent_key=None, rank_level=0):
+    try:
+        g_rank[rank_level]
+    except IndexError:
+        g_rank.insert(rank_level, '\n    {\n        rank = same;\n        ')
+        g_rank_els.insert(rank_level, '')
+
     for key, el in tree.items():
         is_arg = False
         is_attr = False
@@ -542,22 +580,35 @@ def _graph_dot_el(tree, parent_key=None):
 
         if parent_key:
             if is_arg:
-                print('    "%s" -> "%s" [color="red"]' % (
+                print('    "%s" -> "%s" [color="green"]' % (
                     parent_key, key))
             else:
                 print('    "%s" -> "%s"' % (
                     parent_key, key))
-        else:
-            if rank_els != '':
-                rank_els += ' -> '
-            rank_els += '"%s"' % key
-        _graph_dot_el(el, parent_key=key)
+
+        if not is_arg:
+            if g_rank_els[rank_level] != '':
+                g_rank_els[rank_level] += ' -> '
+            g_rank_els[rank_level] += '"%s"' % key
+        if el.denies:
+            for deny in el.denies:
+                print('    "%s" -> "%s" [color="red", arrowhead="box"]' % (
+                    deny, key))
+        _graph_dot_el(el, parent_key=key, rank_level=(rank_level + 1))
 
     if not parent_key:
-        rank += rank_els
-        rank += ' [ style=invis ]; rankdir = TB;\n'
-        rank += '    }'
-        print(rank)
+        for i in range(0, len(g_rank)):
+            if len(g_rank_els[i]) == 0:
+                continue
+            g_rank[i] += g_rank_els[i]
+            if '->' in g_rank_els[i]:
+                # NOTE: to show rank arrow uncomment the line below and comment the
+                #       next one
+                # g_rank[i] += ' [ color=cyan ]'
+                g_rank[i] += ' [ style=invis ]'
+            g_rank[i] += ';\n        rankdir = TB;\n'
+            g_rank[i] += '    }'
+            print(g_rank[i])
 
 
 def _graph_dot(tree):
@@ -569,9 +620,65 @@ def _graph_dot(tree):
     print('}')
 
 
+class OutLeaf:
+    def __init__(self, key=None, child=None, deny=None):
+        if key:
+            self.key = key
+        self.children = {}
+        if child:
+            self.children[child[0]] = child[1]
+
+        self.denies = {}
+        if deny:
+            self.denies[deny[0]] = deny[1]
+
+    def __iter__(self):
+        for child in self.children:
+            yield child
+
+    def items(self):
+        for key, child in self.children.items():
+            yield (key, child)
+
+    def set_name(self, name):
+        self.name = name
+
+    def add_child(self, name, child):
+        child.set_name(name)
+        self.children[name] = child
+
+    def add_deny(self, name, deny):
+        deny.set_name(name)
+        self.denies[name] = deny
+
+    def get_child(self, name):
+        if name in self.children:
+            return self.children[name]
+        else:
+            return None
+
+    def get_deny(self, name):
+        if name in self.denies:
+            return self.denies[name]
+        else:
+            return None
+
+    def exists_child(self, child_name):
+        return (child_name in self.children)
+
+    def exists_deny(self, deny_name):
+        return (deny_name in self.denies)
+
+
 def specs2graph():
     parser = argparse.ArgumentParser(
-        description='Create graph of taxonomy specifications (version 3.3).')
+        description='Create graph of taxonomy specifications (version %s).' %
+        GemTaxonomy.default_tax_version)
+    parser.add_argument(
+        '-t', '--taxonomy-vers', nargs=1,
+        default=[GemTaxonomy.default_tax_version],
+        choices=GemTaxonomy.available_tax_versions,
+        metavar='<taxonomy_vers>', help=_tax_help())
     parser.add_argument(
         '-d', '--dot', action='store_true',
         help='generate a gragh in .dot format')
@@ -580,12 +687,12 @@ def specs2graph():
                         help='show application version and exit')
 
     args = parser.parse_args()
-    out_tree = OrderedDict()
+    out_leaf = OutLeaf()
 
-    gt = GemTaxonomy()
+    gt = GemTaxonomy(vers=args.taxonomy_vers[0])
     for attr in gt.tax['Attribute']:
-        attr_tree = OrderedDict()
-        out_tree[("/%s/" % attr['title'])] = attr_tree
+        attr_leaf = OutLeaf()
+        out_leaf.add_child(("/%s/" % attr['title']), attr_leaf)
 
         for atom in gt.tax['Atom']:
             # print(atom['attr'])
@@ -595,15 +702,15 @@ def specs2graph():
             if atom['name'] not in gt.tax['AtomsDeps']:
                 group_title = gt.tax['AtomsGroupDict'][
                     atom['group']]['title']
-                if group_title in attr_tree:
-                    atom_tree = attr_tree[group_title]
+                if attr_leaf.exists_child(group_title):
+                    atom_leaf = attr_leaf.get_child(group_title)
                 else:
-                    atom_tree = OrderedDict()
-                    attr_tree[group_title] = atom_tree
+                    atom_leaf = OutLeaf()
+                    attr_leaf.add_child(group_title, atom_leaf)
 
-                _graph_dive_deps(gt, atom, atom_tree)
+                _graph_dive_deps(gt, atom, atom_leaf)
 
     if args.dot:
-        _graph_dot(out_tree)
+        _graph_dot(out_leaf)
     else:
-        _graph_print(out_tree)
+        _graph_print(out_leaf)
