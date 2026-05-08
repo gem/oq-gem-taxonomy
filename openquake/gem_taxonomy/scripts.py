@@ -604,8 +604,8 @@ def _graph_dot_el(tree, parent_key=None, rank_level=0):
             if '->' in g_rank_els[i]:
                 # NOTE: to show rank arrow uncomment the line below and comment the
                 #       next one
-                g_rank[i] += ' [ color=cyan ]'
-                # g_rank[i] += ' [ style=invis ]'
+                # g_rank[i] += ' [ color=cyan ]'
+                g_rank[i] += ' [ style=invis ]'
             g_rank[i] += ';\n        rankdir = TB;\n'
             g_rank[i] += '    }'
             print(g_rank[i])
