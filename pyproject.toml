@@ -10,8 +10,8 @@ dependencies = [
   # JUST FOR DEVELOPMENT, before merge in master you can use a private repo to retrieve
   # oq-gem-taxonomy-data from private repository:
   # "openquake.gem-taxonomy-data @ git+https://github.com/gem/oq-gem-taxonomy-data.git@<branch_name>",
-  'openquake.gem-taxonomy-data ~= 1.5',
-  'parsimonious == 0.10.0'
+  'openquake.gem-taxonomy-data ~= 1.5.1',
+  'parsimonious == 0.11.0'
 ]
 
 requires-python = '>=3'
