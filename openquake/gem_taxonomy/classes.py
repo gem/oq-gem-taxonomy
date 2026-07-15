@@ -74,7 +74,7 @@ class GemTaxonomy:
 
     @classmethod
     def gtd_version(cls):
-        return GemTaxonomyData.version
+        return GemTaxonomyData.version()
 
     # method to test package infrastructure
     @classmethod
