@@ -59,12 +59,10 @@ class GemTaxonomy:
         }
 
     @classmethod
-    @property
     def default_tax_version(cls):
         return GemTaxonomyData.DEFAULT_TAX_VERSION.split('.')[0]
 
     @classmethod
-    @property
     def available_tax_versions(cls):
         ret = []
         for ver in GemTaxonomyData.AVAILABLE_TAX_VERSIONS:
@@ -75,7 +73,6 @@ class GemTaxonomy:
         return ret
 
     @classmethod
-    @property
     def gtd_version(cls):
         return GemTaxonomyData.version
 
@@ -89,17 +86,17 @@ class GemTaxonomy:
 ----------------
 '''
             s += '  GemTaxonomy Package       - %s\n' % gem_taxonomy_version
-            s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version
-            s += '  Default Taxonomy Data     - %s\n' % cls.default_tax_version
-            s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_tax_versions)
+            s += '  GemTaxonomyData Package   - %s\n' % cls.gtd_version()
+            s += '  Default Taxonomy Data     - %s\n' % cls.default_tax_version()
+            s += '  Available Taxonomies Data - %s\n' % ", ".join(cls.available_tax_versions())
             s += '  Atoms number              - %d\n' % len(tax_default['Atom'])
             return s
         elif fmt == 'dict' or fmt == 'json':
             ret = {
                 'gem_taxonomy_version': gem_taxonomy_version,
-                'gem_taxonomy_data_version': cls.gtd_version,
-                'gem_taxonomy_data_default_tax_version': cls.default_tax_version,
-                'gem_taxonomy_data_available_tax_versions': cls.available_tax_versions,
+                'gem_taxonomy_data_version': cls.gtd_version(),
+                'gem_taxonomy_data_default_tax_version': cls.default_tax_version(),
+                'gem_taxonomy_data_available_tax_versions': cls.available_tax_versions(),
                 'gem_taxonomy_data_atoms_number': len(tax_default['Atom']),
             }
             if fmt == 'dict':
@@ -517,7 +514,7 @@ class GemTaxonomy:
                 ''')
         else:
             raise ValueError('Allowed versions are currently %s' % ", ".join(
-                GemTaxonomy.available_tax_versions))
+                GemTaxonomy.available_tax_versions()))
 
         self.gtd = GemTaxonomyData()
         self.tax = self.gtd.load(vers)
